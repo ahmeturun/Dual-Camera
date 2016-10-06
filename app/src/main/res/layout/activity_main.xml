@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="vertical"
+    android:id="@+id/activity_main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.urun.camera_test.Data.MainActivity"
+    android:weightSum="2">
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:weightSum="5">
+        <SurfaceView
+            android:id="@+id/camera_preview_front"
+            android:layout_width="300dp"
+            android:layout_height="match_parent" />
+
+        <Button
+            android:id="@+id/button_capture_front"
+            android:text="Capture"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+        <SurfaceView
+            android:id="@+id/camera_preview_back"
+            android:layout_width="300dp"
+            android:layout_height="match_parent" />
+
+        <Button
+            android:id="@+id/button_capture_back"
+            android:text="Capture"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+
+
+</LinearLayout>
