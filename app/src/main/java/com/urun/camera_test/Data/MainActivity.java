@@ -38,7 +38,6 @@ public class MainActivity extends Activity {
         surfaceView_back = (SurfaceView) findViewById(R.id.camera_preview_back);
         surfaceHolder_back = surfaceView_back.getHolder();
         cameraPreview_back = new CameraPreview(getApplicationContext(),camera_back,surfaceHolder_back,1);
-        Toast.makeText(MainActivity.this, "CameraPreview Object has been created", Toast.LENGTH_SHORT).show();
         surfaceHolder_back.addCallback(cameraPreview_back);
         surfaceHolder_back.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 

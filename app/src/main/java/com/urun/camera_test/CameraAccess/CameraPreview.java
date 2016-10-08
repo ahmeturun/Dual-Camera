@@ -116,7 +116,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         public void onPictureTaken(byte[] data, Camera camera) {
             FileOutputStream outStream = null;
             try {
-                outStream = new FileOutputStream(String.format("/sdcard/%d.jpg", System.currentTimeMillis()));
+                outStream = new FileOutputStream(String.format("/sdcard/Pictures/%d.jpg", System.currentTimeMillis()));
                 outStream.write(data);
                 outStream.close();
                 Log.d("picture_saved", "Picture has been saved succesfully: " + data.length);
