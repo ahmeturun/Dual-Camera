@@ -2,7 +2,6 @@ package com.urun.camera_test.CameraAccess;
 
 import android.content.Context;
 import android.hardware.Camera;
-import android.util.AttributeSet;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -19,10 +18,12 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     private SurfaceHolder surfaceHolder;
     private Camera camera;
     int camera_id;
+    public Context context;
     private static String TAG = "camera_error";
 
     public CameraPreview(Context context, Camera camera, SurfaceHolder surfaceHolder,int camera_id) {
         super(context);
+        this.context = context;
         this.camera = camera;
         this.surfaceHolder = surfaceHolder;
         this.camera_id = camera_id;
@@ -37,14 +38,14 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
             camera = Camera.open(camera_id);
         } catch (RuntimeException e) {
             // check for exceptions
-            System.err.println(e);
+            Log.v("camera_open: ",e.getMessage());
             return;
         }
         Camera.Parameters param;
         param = camera.getParameters();
 
         // modify parameter
-        param.setPreviewSize(400, 349);
+        param.setPreviewSize(349, 349);
         camera.setParameters(param);
         camera.setDisplayOrientation(90);
         try {
@@ -106,16 +107,17 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         public void onPictureTaken(byte[] data, Camera camera) {
             FileOutputStream outStream = null;
             try {
-                outStream = new FileOutputStream(String.format(
-                        "/sdcard/%d.jpg", System.currentTimeMillis()));
+                outStream = new FileOutputStream(String.format("/sdcard/Pictures/%d.jpg", System.currentTimeMillis()));
                 outStream.write(data);
                 outStream.close();
-                Log.d("Log", "onPictureTaken - wrote bytes: " + data.length);
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
+                Log.v("filenotfound: ",e.getMessage());
             } catch (IOException e) {
                 e.printStackTrace();
+                Log.v("Ioexception: ",e.getMessage());
             } finally {
+                Log.v("finally: ","doesn't know");
             }
             Log.d("Log", "onPictureTaken - jpeg");
         }
