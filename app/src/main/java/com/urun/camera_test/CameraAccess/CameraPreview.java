@@ -2,10 +2,10 @@ package com.urun.camera_test.CameraAccess;
 
 import android.content.Context;
 import android.hardware.Camera;
-import android.util.AttributeSet;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.widget.Toast;
 
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -32,13 +32,19 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
+        Toast.makeText(getContext(), "Surface Created", Toast.LENGTH_SHORT).show();
         try {
             // open the camera
             camera = Camera.open(camera_id);
+            Toast.makeText(getContext(), "camera "+camera_id +" has been taken", Toast.LENGTH_SHORT).show();
         } catch (RuntimeException e) {
             // check for exceptions
+            Toast.makeText(getContext(), "failed to connect to camera: "+e.getMessage(), Toast.LENGTH_SHORT).show();
             System.err.println(e);
+            Log.d("camera_open_exception: ",e.getMessage());
             return;
+        } catch (Exception e){
+            Toast.makeText(getContext(), "Can't open camera: "+camera_id+"\n"+e.getMessage(), Toast.LENGTH_SHORT).show();
         }
         Camera.Parameters param;
         param = camera.getParameters();
@@ -60,6 +66,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 
     @Override
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+        Toast.makeText(getContext(), "Surface Changed.", Toast.LENGTH_SHORT).show();
         if (surfaceHolder.getSurface() == null) {
             // preview surface does not exist
             return;
@@ -85,9 +92,12 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
-        camera.stopPreview();
-        camera.release();
-        camera = null;
+        if(camera != null) {
+            camera.stopPreview();
+            camera.release();
+            camera = null;
+            Toast.makeText(getContext(), "Surface Destroyed Successfuly", Toast.LENGTH_SHORT).show();
+        }
     }
 
     public static Camera.PictureCallback rawCallback = new Camera.PictureCallback() {
@@ -106,15 +116,16 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         public void onPictureTaken(byte[] data, Camera camera) {
             FileOutputStream outStream = null;
             try {
-                outStream = new FileOutputStream(String.format(
-                        "/sdcard/%d.jpg", System.currentTimeMillis()));
+                outStream = new FileOutputStream(String.format("/sdcard/%d.jpg", System.currentTimeMillis()));
                 outStream.write(data);
                 outStream.close();
-                Log.d("Log", "onPictureTaken - wrote bytes: " + data.length);
+                Log.d("picture_saved", "Picture has been saved succesfully: " + data.length);
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
+                Log.d("file_not_found: ","couldn't save the file "+e.getMessage());
             } catch (IOException e) {
                 e.printStackTrace();
+                Log.d("IOexception: ","couldn't save the file "+e.getMessage());
             } finally {
             }
             Log.d("Log", "onPictureTaken - jpeg");
@@ -122,7 +133,9 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     };
 
     public void takePic(){
-        camera.takePicture(shutterCallback, rawCallback, jpegCallback);
+        if(camera!=null) {
+            camera.takePicture(shutterCallback, rawCallback, jpegCallback);
+        }
     }
 
 }
