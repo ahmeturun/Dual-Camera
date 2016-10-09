@@ -2,6 +2,7 @@ package com.urun.camera_test.Data;
 
 import android.app.Activity;
 import android.hardware.Camera;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.SurfaceHolder;
@@ -11,6 +12,7 @@ import android.widget.Button;
 import android.widget.Toast;
 
 import com.urun.camera_test.CameraAccess.CameraPreview;
+import com.urun.camera_test.CameraAccess.TakePic;
 import com.urun.camera_test.R;
 
 import java.io.FileNotFoundException;
@@ -26,6 +28,7 @@ public class MainActivity extends Activity{
     CameraPreview cameraPreview_back,cameraPreview_front;
     Button capture_back, capture_front;
     Camera.PictureCallback jpegcallback;
+    int ChangeCam=0;
 
 
 
@@ -53,66 +56,18 @@ public class MainActivity extends Activity{
         capture_front.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-//                cameraPreview_front.takePic();
                 if(cameraPreview_front!=null) {
-                    cameraPreview_front.camera.takePicture(null,null,new Camera.PictureCallback() {
-                        @Override
-                        public void onPictureTaken(byte[] data, Camera camera) {
-                            FileOutputStream outStream = null;
-                            try {
-                                outStream = new FileOutputStream(String.format("/sdcard/%d.jpg", System.currentTimeMillis()));
-                                outStream.write(data);
-                                outStream.close();
-                                Log.d("picture_saved", "Picture has been saved succesfully: " + data.length);
-                                camera.release();
-                            } catch (FileNotFoundException e) {
-                                e.printStackTrace();
-                                Log.d("file_not_found: ","couldn't save the file "+e.getMessage());
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                                Log.d("IOexception: ","couldn't save the file "+e.getMessage());
-                            } finally {
-                            }
-                            Log.d("Log", "onPictureTaken - jpeg");
-                        }
-                    });
+                    TakePic backCam=new TakePic();
+                    backCam.execute(cameraPreview_front);
+                    while (backCam.getStatus()!= AsyncTask.Status.FINISHED){
+
+                    }
+                    new TakePic().execute(cameraPreview_back);
                     Toast.makeText(MainActivity.this, "Picture Has Been Taken", Toast.LENGTH_SHORT).show();
                 }else {
                     Toast.makeText(MainActivity.this, "Failed!!!!!", Toast.LENGTH_SHORT).show();
                 }
 
-            }
-        });
-        capture_back = (Button) findViewById(R.id.button_capture_front);
-        capture_back.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if(cameraPreview_back!=null) {
-                    cameraPreview_back.camera.takePicture(null,null,new Camera.PictureCallback() {
-                        @Override
-                        public void onPictureTaken(byte[] data, Camera camera) {
-                            FileOutputStream outStream = null;
-                            try {
-                                outStream = new FileOutputStream(String.format("/sdcard/%d.jpg", System.currentTimeMillis()));
-                                outStream.write(data);
-                                outStream.close();
-                                Log.d("picture_saved", "Picture has been saved succesfully: " + data.length);
-                                camera.release();
-                            } catch (FileNotFoundException e) {
-                                e.printStackTrace();
-                                Log.d("file_not_found: ","couldn't save the file "+e.getMessage());
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                                Log.d("IOexception: ","couldn't save the file "+e.getMessage());
-                            } finally {
-                            }
-                            Log.d("Log", "onPictureTaken - jpeg");
-                        }
-                    });
-                    Toast.makeText(MainActivity.this, "Picture Has Been Taken", Toast.LENGTH_SHORT).show();
-                }else {
-                    Toast.makeText(MainActivity.this, "Failed!!!!!", Toast.LENGTH_SHORT).show();
-                }
             }
         });
     }

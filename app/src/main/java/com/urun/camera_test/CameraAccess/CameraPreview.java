@@ -93,9 +93,6 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
         if(camera != null) {
-            camera.stopPreview();
-            camera.release();
-            camera = null;
             Toast.makeText(getContext(), "Surface Destroyed Successfuly", Toast.LENGTH_SHORT).show();
         }
     }
