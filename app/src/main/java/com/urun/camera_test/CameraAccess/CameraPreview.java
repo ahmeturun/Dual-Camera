@@ -17,7 +17,7 @@ import java.io.IOException;
 
 public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback {
     private SurfaceHolder surfaceHolder;
-    private Camera camera;
+    public Camera camera;
     int camera_id;
     private static String TAG = "camera_error";
 
@@ -120,6 +120,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
                 outStream.write(data);
                 outStream.close();
                 Log.d("picture_saved", "Picture has been saved succesfully: " + data.length);
+                camera.release();
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
                 Log.d("file_not_found: ","couldn't save the file "+e.getMessage());
@@ -134,7 +135,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 
     public void takePic(){
         if(camera!=null) {
-            camera.takePicture(shutterCallback, rawCallback, jpegCallback);
+            camera.takePicture(null, null, jpegCallback);
         }
     }
 
