@@ -17,11 +17,10 @@
             android:id="@+id/camera_preview_front"
             android:layout_width="300dp"
             android:layout_height="match_parent" />
+
         <Button
-            android:id="@+id/button_capture_back"
+            android:id="@+id/button_capture_front"
             android:text="Capture"
-            android:textSize="10sp"
-            android:layout_gravity="center_vertical"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
 
@@ -36,15 +35,12 @@
             android:id="@+id/camera_preview_back"
             android:layout_width="300dp"
             android:layout_height="match_parent" />
+
         <Button
-            android:id="@+id/button_capture_front"
+            android:id="@+id/button_capture_back"
             android:text="Capture"
-            android:textSize="10sp"
-            android:layout_gravity="center_vertical"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
-
-
     </LinearLayout>
 
 
