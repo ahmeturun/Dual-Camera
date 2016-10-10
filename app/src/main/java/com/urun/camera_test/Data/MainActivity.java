@@ -3,7 +3,6 @@ package com.urun.camera_test.Data;
 import android.app.Activity;
 import android.hardware.Camera;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
@@ -11,11 +10,9 @@ import android.widget.Button;
 import android.widget.Toast;
 
 import com.urun.camera_test.CameraAccess.CameraPreview;
+import com.urun.camera_test.CameraAccess.RunnableCam;
 import com.urun.camera_test.R;
-
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import com.urun.camera_test.model.CameraComponent;
 
 
 public class MainActivity extends Activity{
@@ -24,97 +21,80 @@ public class MainActivity extends Activity{
     SurfaceView surfaceView_back,surfaceView_front;
     SurfaceHolder surfaceHolder_back,surfaceHolder_front;
     CameraPreview cameraPreview_back,cameraPreview_front;
-    Button capture_back, capture_front;
-    Camera.PictureCallback jpegcallback;
-
-
+    Button capture;
+    CameraComponent cameraComponentBack;
+    CameraComponent cameraComponentFront;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        // Camera preview from FRONT
+        // Camera preview from BACK
         surfaceView_front = (SurfaceView) findViewById(R.id.camera_preview_front);
         surfaceHolder_front = surfaceView_front.getHolder();
         cameraPreview_front = new CameraPreview(getApplicationContext(),camera_front,surfaceHolder_front,0);
         surfaceHolder_front.addCallback(cameraPreview_front);
         surfaceHolder_front.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
-
+        cameraComponentFront = new CameraComponent(surfaceView_front,surfaceHolder_front,cameraPreview_front);
+        // Camera preview from BACK
         surfaceView_back = (SurfaceView) findViewById(R.id.camera_preview_back);
         surfaceHolder_back = surfaceView_back.getHolder();
         cameraPreview_back = new CameraPreview(getApplicationContext(),camera_back,surfaceHolder_back,1);
-        Toast.makeText(MainActivity.this, "CameraPreview Object has been created", Toast.LENGTH_SHORT).show();
         surfaceHolder_back.addCallback(cameraPreview_back);
         surfaceHolder_back.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+        cameraComponentBack = new CameraComponent(surfaceView_back,surfaceHolder_back,cameraPreview_back);
 
 
-        capture_front = (Button) findViewById(R.id.button_capture_back);
-        capture_front.setOnClickListener(new View.OnClickListener() {
+        capture = (Button) findViewById(R.id.capture);
+        capture.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-//                cameraPreview_front.takePic();
-                if(cameraPreview_front!=null) {
-                    cameraPreview_front.camera.takePicture(null,null,new Camera.PictureCallback() {
-                        @Override
-                        public void onPictureTaken(byte[] data, Camera camera) {
-                            FileOutputStream outStream = null;
-                            try {
-                                outStream = new FileOutputStream(String.format("/sdcard/%d.jpg", System.currentTimeMillis()));
-                                outStream.write(data);
-                                outStream.close();
-                                Log.d("picture_saved", "Picture has been saved succesfully: " + data.length);
-                                camera.release();
-                            } catch (FileNotFoundException e) {
-                                e.printStackTrace();
-                                Log.d("file_not_found: ","couldn't save the file "+e.getMessage());
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                                Log.d("IOexception: ","couldn't save the file "+e.getMessage());
-                            } finally {
-                            }
-                            Log.d("Log", "onPictureTaken - jpeg");
-                        }
-                    });
-                    Toast.makeText(MainActivity.this, "Picture Has Been Taken", Toast.LENGTH_SHORT).show();
-                }else {
-                    Toast.makeText(MainActivity.this, "Failed!!!!!", Toast.LENGTH_SHORT).show();
-                }
-
+                RunnableCam runnableBackCam = new RunnableCam(cameraComponentFront);
+                runnableBackCam.run();
+                // Camera preview from BACK
+                surfaceView_back = (SurfaceView) findViewById(R.id.camera_preview_back);
+                surfaceHolder_back = surfaceView_back.getHolder();
+                cameraPreview_back = new CameraPreview(getApplicationContext(),camera_back,surfaceHolder_back,1);
+                surfaceHolder_back.addCallback(cameraPreview_back);
+                surfaceHolder_back.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+                cameraComponentBack = new CameraComponent(surfaceView_back,surfaceHolder_back,cameraPreview_back);
+                RunnableCam runnableFrontCam = new RunnableCam(cameraComponentBack);
+                runnableFrontCam.run();
             }
         });
-        capture_back = (Button) findViewById(R.id.button_capture_front);
-        capture_back.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if(cameraPreview_back!=null) {
-                    cameraPreview_back.camera.takePicture(null,null,new Camera.PictureCallback() {
-                        @Override
-                        public void onPictureTaken(byte[] data, Camera camera) {
-                            FileOutputStream outStream = null;
-                            try {
-                                outStream = new FileOutputStream(String.format("/sdcard/%d.jpg", System.currentTimeMillis()));
-                                outStream.write(data);
-                                outStream.close();
-                                Log.d("picture_saved", "Picture has been saved succesfully: " + data.length);
-                                camera.release();
-                            } catch (FileNotFoundException e) {
-                                e.printStackTrace();
-                                Log.d("file_not_found: ","couldn't save the file "+e.getMessage());
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                                Log.d("IOexception: ","couldn't save the file "+e.getMessage());
-                            } finally {
-                            }
-                            Log.d("Log", "onPictureTaken - jpeg");
-                        }
-                    });
-                    Toast.makeText(MainActivity.this, "Picture Has Been Taken", Toast.LENGTH_SHORT).show();
-                }else {
-                    Toast.makeText(MainActivity.this, "Failed!!!!!", Toast.LENGTH_SHORT).show();
-                }
-            }
-        });
+//        capture_back = (Button) findViewById(R.id.button_capture_front);
+//        capture_back.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                if(cameraPreview_back!=null) {
+//                    cameraPreview_back.camera.takePicture(null,null,new Camera.PictureCallback() {
+//                        @Override
+//                        public void onPictureTaken(byte[] data, Camera camera) {
+//                            FileOutputStream outStream = null;
+//                            try {
+//                                outStream = new FileOutputStream(String.format("/sdcard/%d.jpg", System.currentTimeMillis()));
+//                                outStream.write(data);
+//                                outStream.close();
+//                                Log.d("picture_saved", "Picture has been saved succesfully: " + data.length);
+//                                camera.release();
+//                            } catch (FileNotFoundException e) {
+//                                e.printStackTrace();
+//                                Log.d("file_not_found: ","couldn't save the file "+e.getMessage());
+//                            } catch (IOException e) {
+//                                e.printStackTrace();
+//                                Log.d("IOexception: ","couldn't save the file "+e.getMessage());
+//                            } finally {
+//                            }
+//                            Log.d("Log", "onPictureTaken - jpeg");
+//                        }
+//                    });
+//                    Toast.makeText(MainActivity.this, "Picture Has Been Taken", Toast.LENGTH_SHORT).show();
+//                }else {
+//                    Toast.makeText(MainActivity.this, "Failed!!!!!", Toast.LENGTH_SHORT).show();
+//                }
+//            }
+//        });
     }
 
     @Override

@@ -7,45 +7,39 @@
     android:layout_height="match_parent"
     tools:context="com.urun.camera_test.Data.MainActivity"
     android:weightSum="2">
-    <LinearLayout
-        android:orientation="horizontal"
+    <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        android:weightSum="5">
+        android:layout_weight="1">
         <SurfaceView
             android:id="@+id/camera_preview_front"
-            android:layout_width="300dp"
+            android:layout_width="match_parent"
             android:layout_height="match_parent" />
 
-        <Button
-            android:id="@+id/button_capture_front"
-            android:text="Capture"
-            android:textSize="12sp"
-            android:layout_gravity="center_vertical"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+    </RelativeLayout>
 
-    </LinearLayout>
-
-    <LinearLayout
-        android:orientation="horizontal"
+    <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1">
         <SurfaceView
             android:id="@+id/camera_preview_back"
-            android:layout_width="300dp"
+            android:layout_width="match_parent"
             android:layout_height="match_parent" />
 
         <Button
-            android:id="@+id/button_capture_back"
             android:text="Capture"
-            android:textSize="12sp"
-            android:layout_gravity="center_vertical"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
-    </LinearLayout>
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentEnd="true"
+            android:layout_marginRight="15dp"
+            android:layout_marginEnd="15dp"
+            android:layout_marginBottom="13dp"
+            android:id="@+id/capture" />
+
+    </RelativeLayout>
 
 
 </LinearLayout>

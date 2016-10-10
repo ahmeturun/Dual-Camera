@@ -89,54 +89,11 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 
         }
     }
-
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
         if(camera != null) {
-            camera.stopPreview();
-            camera.release();
             camera = null;
             Toast.makeText(getContext(), "Surface Destroyed Successfuly", Toast.LENGTH_SHORT).show();
         }
     }
-
-    public static Camera.PictureCallback rawCallback = new Camera.PictureCallback() {
-        public void onPictureTaken(byte[] data, Camera camera) {
-            Log.d("Log", "onPictureTaken - raw");
-        }
-    };
-
-    /** Handles data for jpeg picture */
-    public static Camera.ShutterCallback shutterCallback = new Camera.ShutterCallback() {
-        public void onShutter() {
-            Log.i("Log", "onShutter'd");
-        }
-    };
-    public static Camera.PictureCallback jpegCallback = new Camera.PictureCallback() {
-        public void onPictureTaken(byte[] data, Camera camera) {
-            FileOutputStream outStream = null;
-            try {
-                outStream = new FileOutputStream(String.format("/sdcard/%d.jpg", System.currentTimeMillis()));
-                outStream.write(data);
-                outStream.close();
-                Log.d("picture_saved", "Picture has been saved succesfully: " + data.length);
-                camera.release();
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
-                Log.d("file_not_found: ","couldn't save the file "+e.getMessage());
-            } catch (IOException e) {
-                e.printStackTrace();
-                Log.d("IOexception: ","couldn't save the file "+e.getMessage());
-            } finally {
-            }
-            Log.d("Log", "onPictureTaken - jpeg");
-        }
-    };
-
-    public void takePic(){
-        if(camera!=null) {
-            camera.takePicture(null, null, jpegCallback);
-        }
-    }
-
 }
