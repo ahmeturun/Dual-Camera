@@ -56,13 +56,17 @@ public class MainActivity extends Activity{
         capture_front.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                Log.e("clicked_capture:","ok");
                 if(cameraPreview_front!=null) {
+                    TakePic frontCam = new TakePic();
                     TakePic backCam=new TakePic();
                     backCam.execute(cameraPreview_front);
-                    while (backCam.getStatus()!= AsyncTask.Status.FINISHED){
+                    frontCam.execute(cameraPreview_back);
+//                    frontCam.execute(cameraPreview_front);
 
-                    }
-                    new TakePic().execute(cameraPreview_back);
+//                    while (backCam.getStatus()!= AsyncTask.Status.FINISHED){
+//
+//                    }
                     Toast.makeText(MainActivity.this, "Picture Has Been Taken", Toast.LENGTH_SHORT).show();
                 }else {
                     Toast.makeText(MainActivity.this, "Failed!!!!!", Toast.LENGTH_SHORT).show();

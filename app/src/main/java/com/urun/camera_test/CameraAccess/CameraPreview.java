@@ -11,6 +11,10 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
+import static android.hardware.Camera.Parameters.FOCUS_MODE_AUTO;
+import static android.hardware.Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE;
+import static android.hardware.Camera.Parameters.FOCUS_MODE_MACRO;
+
 /**
  * Created by ahmet on 10/5/2016.
  */
@@ -51,6 +55,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 
         // modify parameter
         param.setPreviewSize(400, 349);
+        param.setFocusMode(FOCUS_MODE_AUTO);
         camera.setParameters(param);
         camera.setDisplayOrientation(90);
         try {

@@ -3,7 +3,6 @@ package com.urun.camera_test.CameraAccess;
 import android.hardware.Camera;
 import android.os.AsyncTask;
 import android.util.Log;
-import android.widget.Toast;
 
 import com.urun.camera_test.Data.MainActivity;
 
@@ -15,39 +14,40 @@ import java.io.IOException;
  * Created by ahmet on 10/9/2016.
  */
 
-public class TakePic extends AsyncTask<CameraPreview, String, Integer> {
+public class TakePic extends AsyncTask<CameraPreview, String, CameraPreview> {
+
     @Override
-    protected Integer doInBackground(CameraPreview... params) {
-            params[0].camera.takePicture(null,null,new Camera.PictureCallback() {
-                @Override
-                public void onPictureTaken(byte[] data, Camera camera) {
-                    FileOutputStream outStream = null;
-                    try {
-                        outStream = new FileOutputStream(String.format("/sdcard/%d.jpg", System.currentTimeMillis()));
-                        outStream.write(data);
-                        outStream.close();
-                        Log.d("picture_saved", "Picture has been saved succesfully: " + data.length);
-                        camera.release();
-                    } catch (FileNotFoundException e) {
-                        e.printStackTrace();
-                        Log.d("file_not_found: ","couldn't save the file "+e.getMessage());
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                        Log.d("IOexception: ","couldn't save the file "+e.getMessage());
-                    } finally {
-                    }
-                    Log.d("Log", "onPictureTaken - jpeg");
+    protected CameraPreview doInBackground(final CameraPreview... params) {
+        Log.e("doinback_compt:" ,"done");
+        return params[0];
+    }
+
+
+    @Override
+    protected void onPostExecute(CameraPreview cameraPreview) {
+        super.onPostExecute(cameraPreview);
+        cameraPreview.camera.takePicture(null,null,new Camera.PictureCallback() {
+            @Override
+            public void onPictureTaken(byte[] data, Camera camera) {
+                FileOutputStream outStream = null;
+                try {
+                    outStream = new FileOutputStream(String.format("/sdcard/front%d.jpg", System.currentTimeMillis()));
+                    outStream.write(data);
+                    outStream.close();
+                    Log.e("picture_saved", "Picture has been saved succesfully: " + data.length);
+                    camera.release();
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                    Log.e("file_not_found: ","couldn't save the file "+e.getMessage());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    Log.e("IOexception: ","couldn't save the file "+e.getMessage());
+                } catch (Exception e){
+                    Log.e("general_exception: ","couldn't save the file "+e.getMessage());
                 }
-            });
-        return 0;
-    }
-
-    @Override
-    protected void onPostExecute(Integer integer) {
-        super.onPostExecute(integer);
+            }
+        });
+        Log.e("post_execute: ","execution finished.");
 
     }
-
-    /*http://stackoverflow.com/questions/18948341/cancel-an-asynctask-inside-itself*/
-
 }
