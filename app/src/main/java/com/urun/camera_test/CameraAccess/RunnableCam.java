@@ -3,10 +3,6 @@ package com.urun.camera_test.CameraAccess;
 import android.app.Activity;
 import android.hardware.Camera;
 import android.util.Log;
-import android.view.SurfaceHolder;
-import android.view.SurfaceView;
-
-import com.urun.camera_test.R;
 import com.urun.camera_test.model.CameraComponent;
 
 import java.io.FileNotFoundException;
@@ -20,9 +16,11 @@ import java.io.IOException;
 public class RunnableCam extends Activity implements Runnable {
 
     CameraComponent cameraComponentFirst;
+    CameraComponent cameraComponentSecond;
 
-    public RunnableCam(CameraComponent cameraComponentFirst) {
+    public RunnableCam(CameraComponent cameraComponentFirst,CameraComponent cameraComponentSecond) {
         this.cameraComponentFirst = cameraComponentFirst;
+        this.cameraComponentSecond = cameraComponentSecond;
     }
 
     @Override
@@ -32,11 +30,11 @@ public class RunnableCam extends Activity implements Runnable {
             public void onPictureTaken(byte[] data, Camera camera) {
                 FileOutputStream outStream = null;
                 try {
-                    outStream = new FileOutputStream(String.format("/sdcard/back%d.jpg", System.currentTimeMillis()));
+                    outStream = new FileOutputStream(String.format("/sdcard/backnew%d.jpg", System.currentTimeMillis()));
                     outStream.write(data);
                     outStream.close();
                     Log.e("picture_saved", "Picture has been saved succesfully: " + data.length);
-                    camera.release();
+                    cameraComponentFirst.cameraPreview.surfaceDestroyed(cameraComponentFirst.surfaceHolder);
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();
                     Log.e("file_not_found: ", "couldn't save the file " + e.getMessage());
@@ -47,5 +45,6 @@ public class RunnableCam extends Activity implements Runnable {
                 Log.e("Log", "onPictureTaken - jpeg");
             }
         });
+//        cameraComponentFirst.surfaceHolder.removeCallback(cameraComponentFirst.cameraPreview);
     }
 }

@@ -11,6 +11,8 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
+import static android.hardware.Camera.Parameters.FOCUS_MODE_AUTO;
+
 /**
  * Created by ahmet on 10/5/2016.
  */
@@ -41,7 +43,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
             // check for exceptions
             Toast.makeText(getContext(), "failed to connect to camera: "+e.getMessage(), Toast.LENGTH_SHORT).show();
             System.err.println(e);
-            Log.d("camera_open_exception: ",e.getMessage());
+            Log.e("camera_open_exception: ",e.getMessage());
             return;
         } catch (Exception e){
             Toast.makeText(getContext(), "Can't open camera: "+camera_id+"\n"+e.getMessage(), Toast.LENGTH_SHORT).show();
@@ -50,7 +52,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         param = camera.getParameters();
 
         // modify parameter
-        param.setPreviewSize(400, 349);
+        param.setPreviewSize(400, 500);
         camera.setParameters(param);
         camera.setDisplayOrientation(90);
         try {
@@ -61,6 +63,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         } catch (Exception e) {
             // check for exceptions
             System.err.println(e);
+            Log.e("camera_preview_fail: ",e.getMessage());
         }
     }
 

@@ -3,6 +3,7 @@ package com.urun.camera_test.Data;
 import android.app.Activity;
 import android.hardware.Camera;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
@@ -15,7 +16,10 @@ import com.urun.camera_test.R;
 import com.urun.camera_test.model.CameraComponent;
 
 
+
 public class MainActivity extends Activity{
+
+    public static int camera_wait = 0;
 
     private Camera camera_front, camera_back;
     SurfaceView surfaceView_back,surfaceView_front;
@@ -50,16 +54,18 @@ public class MainActivity extends Activity{
         capture.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                RunnableCam runnableBackCam = new RunnableCam(cameraComponentFront);
+                RunnableCam runnableBackCam = new RunnableCam(cameraComponentFront,cameraComponentBack);
                 runnableBackCam.run();
+                cameraComponentFront.cameraPreview.surfaceDestroyed(cameraComponentFront.surfaceHolder);
                 // Camera preview from BACK
+
                 surfaceView_back = (SurfaceView) findViewById(R.id.camera_preview_back);
                 surfaceHolder_back = surfaceView_back.getHolder();
                 cameraPreview_back = new CameraPreview(getApplicationContext(),camera_back,surfaceHolder_back,1);
                 surfaceHolder_back.addCallback(cameraPreview_back);
                 surfaceHolder_back.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
                 cameraComponentBack = new CameraComponent(surfaceView_back,surfaceHolder_back,cameraPreview_back);
-                RunnableCam runnableFrontCam = new RunnableCam(cameraComponentBack);
+                RunnableCam runnableFrontCam = new RunnableCam(cameraComponentBack,cameraComponentFront);
                 runnableFrontCam.run();
             }
         });
