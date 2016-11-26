@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Camera_Test</string>
+    <string name="record">RECORDING</string>
 </resources>

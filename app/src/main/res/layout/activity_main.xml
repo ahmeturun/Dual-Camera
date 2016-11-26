@@ -17,10 +17,26 @@
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1">
-            <SurfaceView
-                android:id="@+id/camera_preview_front"
+            <RelativeLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent" />
+                android:layout_height="match_parent">
+                <SurfaceView
+                    android:id="@+id/camera_preview_front"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/recording_text_front"
+                    android:text="@string/record"
+                    android:layout_alignParentTop="true"
+                    android:visibility="invisible"
+                    android:layout_alignParentLeft="true"
+                    android:layout_marginTop="5dp"
+                    android:layout_marginLeft="5dp"
+                    android:textSize="15sp"
+                    android:background="@color/recordTextColor"/>
+            </RelativeLayout>
 
         </LinearLayout>
 
@@ -29,10 +45,27 @@
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1">
-            <SurfaceView
-                android:id="@+id/camera_preview_back"
+            <RelativeLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent" />
+                android:layout_height="match_parent">
+                <SurfaceView
+                    android:id="@+id/camera_preview_back"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/recording_text_back"
+                    android:text="@string/record"
+                    android:layout_alignParentTop="true"
+                    android:visibility="invisible"
+                    android:layout_alignParentLeft="true"
+                    android:layout_marginTop="5dp"
+                    android:layout_marginLeft="5dp"
+                    android:textSize="15sp"
+                    android:background="@color/recordTextColor"/>
+
+            </RelativeLayout>
         </LinearLayout>
     </LinearLayout>
 

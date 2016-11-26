@@ -15,6 +15,7 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.urun.camera_test.CameraAccess.CameraPreview;
@@ -35,20 +36,22 @@ public class MainActivity extends Activity{
     CameraPreview cameraPreview_back,cameraPreview_front;
     Button capture_back, capture_front;
     Button capture_video;
-    Camera.PictureCallback jpegcallback;
-    InputStream inputStream1;
     int pictureNumber=0;
-
-
-
+    boolean captureFlag;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        //getting the number of camera exists on the device
         int numberOfCameras= Camera.getNumberOfCameras();
-        final DatabaseHelper databaseHelper = new DatabaseHelper(this);
         Toast.makeText(this, "Number Of Cameras: "+numberOfCameras, Toast.LENGTH_SHORT).show();
+        //textview for recording message on the UI
+        final TextView recordBack = (TextView)findViewById(R.id.recording_text_back);
+        final TextView recordFront = (TextView)findViewById(R.id.recording_text_front);
+
+        //setting captureFlag to false at the beginning of the activity
+        captureFlag = true;
 
         // Camera preview from FRONT
         surfaceView_front = (SurfaceView) findViewById(R.id.camera_preview_front);
@@ -56,7 +59,7 @@ public class MainActivity extends Activity{
         cameraPreview_front = new CameraPreview(getApplicationContext(),camera_front,surfaceHolder_front,0);
         surfaceHolder_front.addCallback(cameraPreview_front);
         surfaceHolder_front.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
-
+        // Camera preview from BACK
         surfaceView_back = (SurfaceView) findViewById(R.id.camera_preview_back);
         surfaceHolder_back = surfaceView_back.getHolder();
         cameraPreview_back = new CameraPreview(getApplicationContext(),camera_back,surfaceHolder_back,1);
@@ -64,11 +67,12 @@ public class MainActivity extends Activity{
         surfaceHolder_back.addCallback(cameraPreview_back);
         surfaceHolder_back.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 
-
+        // Setting onClick function for "capture" button
         capture_front = (Button) findViewById(R.id.button_capture_back);
         capture_front.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                // Taking picture from front camera(name references are switched so front takes back camera parameters. Don't get confused.)
                 if(cameraPreview_front!=null) {
                     cameraPreview_front.camera.takePicture(null,null,new Camera.PictureCallback() {
                         @Override
@@ -83,10 +87,8 @@ public class MainActivity extends Activity{
                                 camera.release();
                                 surfaceHolder_back.addCallback(cameraPreview_back);
                                 surfaceHolder_back.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
-//                                databaseHelper.insertPictureData(0,data);
                             } catch (FileNotFoundException e) {
                                 e.printStackTrace();
-
                                 Log.e("file_not_found: ","couldn't save the file "+e.getMessage());
                             } catch (IOException e) {
                                 e.printStackTrace();
@@ -98,8 +100,9 @@ public class MainActivity extends Activity{
                     });
                     Toast.makeText(MainActivity.this, "Picture Has Been Taken", Toast.LENGTH_SHORT).show();
                 }else {
-                    Toast.makeText(MainActivity.this, "Failed!!!!!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this, "Failed!!!", Toast.LENGTH_SHORT).show();
                 }
+                // Taking picture from back camera
                 if(cameraPreview_back!=null) {
                     cameraPreview_back.camera.takePicture(null,null,new Camera.PictureCallback() {
                         @Override
@@ -125,17 +128,36 @@ public class MainActivity extends Activity{
                     });
                     Toast.makeText(MainActivity.this, "Picture Has Been Taken", Toast.LENGTH_SHORT).show();
                 }else {
-                    Toast.makeText(MainActivity.this, "Failed!!!!!", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this, "Failed!!!", Toast.LENGTH_SHORT).show();
                 }
 
             }
         });
-
+        // Setting onClick function for capture_video button
         capture_video = (Button)findViewById(R.id.capture_video);
         capture_video.setOnClickListener(new View.OnClickListener() {
+            MediaRecorder mediaRecorder_front = new MediaRecorder();
+            MediaRecorder mediaRecorder_back = new MediaRecorder();
             @Override
             public void onClick(View v) {
-                startRecording(cameraPreview_front);
+                captureFlag = !captureFlag;
+                // Starting record for back camera
+                startRecording(cameraPreview_front,mediaRecorder_front);
+                // Starting record for front camera
+                startRecording(cameraPreview_back,mediaRecorder_back);
+                if(!captureFlag) {
+                    // Setting UI recording messages to visible
+                    recordBack.setVisibility(View.VISIBLE);
+                    recordFront.setVisibility(View.VISIBLE);
+                }else{
+                    recordBack.setVisibility(View.INVISIBLE);
+                    recordFront.setVisibility(View.INVISIBLE);
+                    // Recording session has ended, initialing mediaRecorders for later usage
+                    mediaRecorder_front = new MediaRecorder();
+                    mediaRecorder_back = new MediaRecorder();
+                    Toast.makeText(MainActivity.this, "Media Recorded!", Toast.LENGTH_SHORT).show();
+                }
+
             }
         });
     }
@@ -156,22 +178,40 @@ public class MainActivity extends Activity{
         Toast.makeText(this, "jpeg taken as bitmap.", Toast.LENGTH_SHORT).show();
     }
 
-    public void startRecording(CameraPreview cameraPreview){
-        MediaRecorder mediaRecorder = new MediaRecorder();
-        cameraPreview.camera.unlock();
-        mediaRecorder.setCamera(cameraPreview.camera);
-        mediaRecorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
-        mediaRecorder.setProfile(CamcorderProfile.get(0,CamcorderProfile.QUALITY_LOW));
-        mediaRecorder.setOutputFile(Environment.getExternalStorageDirectory()+"exp.mp4");
-        mediaRecorder.setMaxDuration(600000);
-        mediaRecorder.setMaxFileSize(50000000);
-        try{
-            mediaRecorder.prepare();
-            mediaRecorder.start();
-        } catch (IOException e) {
-            e.printStackTrace();
+    public void startRecording(CameraPreview cameraPreview,MediaRecorder mediaRecorder){
+        if(!captureFlag) {
+            try {
+                cameraPreview.camera.unlock();
+                try {
+                    mediaRecorder.setCamera(cameraPreview.camera);
+                    mediaRecorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
+                    mediaRecorder.setAudioSource(MediaRecorder.AudioSource.CAMCORDER);
+                    CamcorderProfile camcorderProfile = CamcorderProfile.get(CamcorderProfile.QUALITY_1080P);
+                    camcorderProfile.videoFrameHeight = 1920;
+                    camcorderProfile.videoFrameWidth = 1080;
+                    mediaRecorder.setProfile(camcorderProfile);
+                    mediaRecorder.setOutputFile(Environment.getExternalStorageDirectory() + "/" + System.currentTimeMillis() + "exp.mp4");
+                    mediaRecorder.setMaxFileSize(50000000);
+                    try {
+                        mediaRecorder.prepare();
+                        mediaRecorder.start();
+                    } catch (IOException e) {
+                        Log.e("media_recorder_start:",e.getMessage());
+                    }
+                } catch (Exception e){
+                    Log.e("media_recorder_prblm: ",e.getMessage());
+                }
+            } catch (Exception ex) {
+                Log.e("unlock_fail: ", ex.getMessage());
+            }
+        }else{
+            if(mediaRecorder!=null) {
+                mediaRecorder.reset(); // clear recorder configuration
+                mediaRecorder.release(); // release the recorder object
+                cameraPreview.camera.lock(); // lock camera for later use
+                Toast.makeText(this, "stopped recording", Toast.LENGTH_SHORT).show();
+            }
         }
-
 
     }
 
