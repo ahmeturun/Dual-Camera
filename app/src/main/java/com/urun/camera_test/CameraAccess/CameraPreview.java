@@ -50,11 +50,11 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         param = camera.getParameters();
 
         // modify parameter
-        param.setPreviewSize(surfaceHolder.getSurfaceFrame().width(), surfaceHolder.getSurfaceFrame().height());
-//        param.setPreviewSize(640, 480);
+//        param.setPreviewSize(surfaceHolder.getSurfaceFrame().width(), surfaceHolder.getSurfaceFrame().height());
+        param.setPreviewSize(320, 240);
         Toast.makeText(getContext(), "width:"+surfaceHolder.getSurfaceFrame().width()+"\nheight: "+surfaceHolder.getSurfaceFrame().height()+"", Toast.LENGTH_SHORT).show();
         camera.setParameters(param);
-        camera.setDisplayOrientation(90);
+//        camera.setDisplayOrientation(90);
         try {
             // The Surface has been created, now tell the camera where to draw
             // the preview.

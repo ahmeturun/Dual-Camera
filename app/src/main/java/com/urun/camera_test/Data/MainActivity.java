@@ -185,11 +185,13 @@ public class MainActivity extends Activity{
                 try {
                     mediaRecorder.setCamera(cameraPreview.camera);
                     mediaRecorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
-                    mediaRecorder.setAudioSource(MediaRecorder.AudioSource.CAMCORDER);
-                    CamcorderProfile camcorderProfile = CamcorderProfile.get(CamcorderProfile.QUALITY_1080P);
-                    camcorderProfile.videoFrameHeight = 1920;
-                    camcorderProfile.videoFrameWidth = 1080;
-                    mediaRecorder.setProfile(camcorderProfile);
+                    mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.DEFAULT);
+                    mediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.DEFAULT);
+//                    mediaRecorder.setAudioSource(MediaRecorder.AudioSource.CAMCORDER);
+//                    CamcorderProfile camcorderProfile = CamcorderProfile.get(0,CamcorderProfile.QUALITY_LOW);
+//                    camcorderProfile.videoFrameHeight = 1920;
+//                    camcorderProfile.videoFrameWidth = 1080;
+//                    mediaRecorder.setProfile(camcorderProfile);
                     mediaRecorder.setOutputFile(Environment.getExternalStorageDirectory() + "/" + System.currentTimeMillis() + "exp.mp4");
                     mediaRecorder.setMaxFileSize(50000000);
                     try {
