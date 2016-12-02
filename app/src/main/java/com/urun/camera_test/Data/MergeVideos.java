@@ -16,6 +16,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 
+import wseemann.media.FFmpegMediaMetadataRetriever;
+
 
 /**
  * Created by urun on 28.11.2016.
@@ -37,36 +39,36 @@ public class MergeVideos {
         /* Setting first bitmap to the first frame before going into the loop. */
         Bitmap frame = mediaMetadataRetriever.getFrameAtTime(0);
         ArrayList<Bitmap> allFrames = new ArrayList<Bitmap>();
-        int frameCounter = 0;/* Thiss variable will keep increasing for saving bitmaps one-by-one to the Bitmap[] array*/
+        int frameCounter = 0;/* This variable will keep increasing for saving bitmaps one-by-one to the Bitmap[] array*/
         for (int i = 0; i<=videoLength;i=i+40000) {/*Increasing the counter by 40000 so we can get 25 frames from one second.*/
             if(frame==null) break;
             /* Retrieving the next frame each time loop starts.
             * We want to retrieve 25 frames from each second,
             * ergo the interval between the frame should be 40000 microsecond
             * The Math : 0, 40000, 80000,...,1000000 => 40000*25 = 1000000 Us = 1 sec*/
-            //IMPORTANT//
+            //**IMPORTANT**//
             /*ANDROID BUG on ANDROID API 21 MARSHMALLOW  => link: 'https://code.google.com/p/android/issues/detail?id=193194'
             * THE MediaMetadataRetriever.OPTION_CLOSEST_SYNC VALUE DOESN'T WORK CORRECTLY WITH
             * 'getFrameAtTime()' FUNCTION. THIS VALUE SUPPOSE TO RETURN THE FRAME AT THE GIVEN TIME,
-            * BUT ON API LEVEL 21 IT RETURNS THE KEY VALUE FOR THE GIVEN TIME WHICH RESULTS ONLY 4-5 DIFFERENT
+            * BUT ON API LEVEL 21 IT RETURNS ONLY THE KEYFRAME FOR THE GIVEN TIME WHICH RESULTS ONLY 4-5 DIFFERENT
             * FRAMES STORED IN ONE SECOND. */
-            //SOLUTION//
+            //**SOLUTION**//
             /* IN ORDER TO AVOID THIS BUG, WE'LL USE FFMPEG LIBRARY WHICH IS A NATIVE LIBRARY SO
-            * HOPEFULLY WON'T GIVE THE SAME ERROR.*/
+            * HOPEFULLY WON'T GET THE SAME ERROR.*/
             frame = mediaMetadataRetriever.getFrameAtTime(i,MediaMetadataRetriever.OPTION_CLOSEST);
             allFrames.add(frame);
         }
 
-//        FFmpegMediaMetadataRetriever fFmpegMediaMetadataRetriever = new FFmpegMediaMetadataRetriever();
-        /*trying jcodec retrieving frames
-        *int countFrame = 0;
+        FFmpegMediaMetadataRetriever fFmpegMediaMetadataRetriever = new FFmpegMediaMetadataRetriever();
+        fFmpegMediaMetadataRetriever.setDataSource(pathOfFile);
+        /*trying jcodec retrieving frames*/
+        int countFrame = 0;
         ArrayList<Bitmap> jCodecFrames = new ArrayList<Bitmap>();
         File theFile = new File(pathOfFile);
         for (int i = 0; i < videoLength; i= i + 40000) {
             jCodecFrames.add(fFmpegMediaMetadataRetriever.getFrameAtTime(i,FFmpegMediaMetadataRetriever.OPTION_CLOSEST));
             countFrame++;
         }
-        */
         return allFrames;
     }
     public ArrayList<Bitmap> MergeFrames(ArrayList<Bitmap> firstFrameList, ArrayList<Bitmap> secondFrameList){

@@ -1,7 +1,7 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 19
+    compileSdkVersion 24
     buildToolsVersion "24.0.2"
     defaultConfig {
         applicationId "com.urun.camera_test"
@@ -11,6 +11,12 @@ android {
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
+    repositories {
+        flatDir {
+            dirs 'libs'
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
@@ -24,8 +30,9 @@ dependencies {
     androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
+    compile(name:'FFmpegAndroid', ext:'aar')
     testCompile 'junit:junit:4.12'
     compile 'com.readystatesoftware.sqliteasset:sqliteassethelper:2.0.1'
     compile 'org.jcodec:jcodec-android:0.1.9'
-//    compile 'com.github.wseemann:FFmpegMediaMetadataRetriever:1.0.14'
+    compile 'com.github.wseemann:FFmpegMediaMetadataRetriever:1.0.14'
 }

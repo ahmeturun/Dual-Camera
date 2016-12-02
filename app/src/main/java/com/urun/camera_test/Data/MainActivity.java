@@ -29,6 +29,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.concurrent.Exchanger;
 
 
 public class MainActivity extends Activity{
@@ -169,6 +170,8 @@ public class MainActivity extends Activity{
                         e.printStackTrace();
                     } catch (JCodecException e) {
                         e.printStackTrace();
+                    } catch (Exception e) {
+                        Log.e("retrieving_prob:",e.getMessage());
                     }
                     /* Getting frames from video taken from front camera. */
                     ArrayList<Bitmap> frontFrames = null;
@@ -217,6 +220,7 @@ public class MainActivity extends Activity{
                 try {
                     mediaRecorder.setCamera(cameraPreview.camera);
                     mediaRecorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
+//                    mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
                     mediaRecorder.setAudioSource(MediaRecorder.AudioSource.CAMCORDER);
                     CamcorderProfile camcorderProfile = CamcorderProfile.get(cameraId,CamcorderProfile.QUALITY_LOW);
 //                    camcorderProfile.videoFrameHeight = 1920;
