@@ -220,9 +220,9 @@ public class MainActivity extends Activity{
                 try {
                     mediaRecorder.setCamera(cameraPreview.camera);
                     mediaRecorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
-//                    mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
                     mediaRecorder.setAudioSource(MediaRecorder.AudioSource.CAMCORDER);
-                    CamcorderProfile camcorderProfile = CamcorderProfile.get(cameraId,CamcorderProfile.QUALITY_LOW);
+//                    mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
+                    CamcorderProfile camcorderProfile = CamcorderProfile.get(cameraId,CamcorderProfile.QUALITY_480P);
 //                    camcorderProfile.videoFrameHeight = 1920;
 //                    camcorderProfile.videoFrameWidth = 1080;
                     mediaRecorder.setProfile(camcorderProfile);

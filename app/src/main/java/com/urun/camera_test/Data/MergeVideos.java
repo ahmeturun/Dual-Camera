@@ -4,7 +4,6 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
-import android.media.MediaMetadataRetriever;
 import android.os.Environment;
 
 import org.jcodec.api.JCodecException;
@@ -28,48 +27,34 @@ public class MergeVideos {
         this.context = context;
     }
     Context context;
-
-    MediaMetadataRetriever mediaMetadataRetriever = new MediaMetadataRetriever();
-    public ArrayList<Bitmap> RetrieveFramesAsBitmapArray(String pathOfFile) throws IOException, JCodecException {
-        /* Setting the file on the given path as the Data Source of MediaMetadataRetriever*/
-        mediaMetadataRetriever.setDataSource(pathOfFile);
-        /* Retrieving video length with MediaMetadataRetriever class extractMetadata function, and this function returns the time
-        * as milliseconds. So multiply that value by 1000 and get the time as microseconds.*/
-        long videoLength = Long.parseLong(mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION))*1000;
-        /* Setting first bitmap to the first frame before going into the loop. */
-        Bitmap frame = mediaMetadataRetriever.getFrameAtTime(0);
-        ArrayList<Bitmap> allFrames = new ArrayList<Bitmap>();
-        int frameCounter = 0;/* This variable will keep increasing for saving bitmaps one-by-one to the Bitmap[] array*/
-        for (int i = 0; i<=videoLength;i=i+40000) {/*Increasing the counter by 40000 so we can get 25 frames from one second.*/
-            if(frame==null) break;
-            /* Retrieving the next frame each time loop starts.
-            * We want to retrieve 25 frames from each second,
-            * ergo the interval between the frame should be 40000 microsecond
-            * The Math : 0, 40000, 80000,...,1000000 => 40000*25 = 1000000 Us = 1 sec*/
-            //**IMPORTANT**//
-            /*ANDROID BUG on ANDROID API 21 MARSHMALLOW  => link: 'https://code.google.com/p/android/issues/detail?id=193194'
-            * THE MediaMetadataRetriever.OPTION_CLOSEST_SYNC VALUE DOESN'T WORK CORRECTLY WITH
-            * 'getFrameAtTime()' FUNCTION. THIS VALUE SUPPOSE TO RETURN THE FRAME AT THE GIVEN TIME,
-            * BUT ON API LEVEL 21 IT RETURNS ONLY THE KEYFRAME FOR THE GIVEN TIME WHICH RESULTS ONLY 4-5 DIFFERENT
-            * FRAMES STORED IN ONE SECOND. */
-            //**SOLUTION**//
-            /* IN ORDER TO AVOID THIS BUG, WE'LL USE FFMPEG LIBRARY WHICH IS A NATIVE LIBRARY SO
-            * HOPEFULLY WON'T GET THE SAME ERROR.*/
-            frame = mediaMetadataRetriever.getFrameAtTime(i,MediaMetadataRetriever.OPTION_CLOSEST);
-            allFrames.add(frame);
-        }
-
+    //**IMPORTANT**//
+    /*ANDROID BUG on ANDROID API 21 MARSHMALLOW  => link: 'https://code.google.com/p/android/issues/detail?id=193194'
+     * THE MediaMetadataRetriever.OPTION_CLOSEST_SYNC VALUE DOESN'T WORK CORRECTLY WITH
+     * 'getFrameAtTime()' FUNCTION. THIS VALUE SUPPOSE TO RETURN THE FRAME AT THE GIVEN TIME,
+     * BUT ON API LEVEL 21, IT RETURNS ONLY THE KEYFRAME FOR THE GIVEN TIME WHICH RESULTS ONLY 4-5 DIFFERENT
+     * FRAMES STORED IN ONE SECOND. */
+    //**SOLUTION**//
+    /* IN ORDER TO AVOID THIS BUG, WE'LL USE FFMPEG LIBRARY WHICH IS A NATIVE LIBRARY SO
+     * HOPEFULLY WON'T GET THE SAME ERROR.
+     * Building FFMpeg solution: http://stackoverflow.com/a/40125403
+     * Library that used to communucate with FFMpeg: https://github.com/wseemann/FFmpegMediaMetadataRetriever(the aar file on the project has taken fromt there.)*/
+    public ArrayList<Bitmap> RetrieveFramesAsBitmapArray(String pathOfFile) throws IOException, JCodecException {/*including aar for ffmpeg solution: http://stackoverflow.com/a/39770874*/
         FFmpegMediaMetadataRetriever fFmpegMediaMetadataRetriever = new FFmpegMediaMetadataRetriever();
-        fFmpegMediaMetadataRetriever.setDataSource(pathOfFile);
-        /*trying jcodec retrieving frames*/
-        int countFrame = 0;
-        ArrayList<Bitmap> jCodecFrames = new ArrayList<Bitmap>();
-        File theFile = new File(pathOfFile);
-        for (int i = 0; i < videoLength; i= i + 40000) {
-            jCodecFrames.add(fFmpegMediaMetadataRetriever.getFrameAtTime(i,FFmpegMediaMetadataRetriever.OPTION_CLOSEST));
-            countFrame++;
+        fFmpegMediaMetadataRetriever.setDataSource(pathOfFile);/* Setting the data source of FFmpegMediaMetadataRetriever variable to the video file.*/
+        /* Duration(videoLength) is returning as milliseconds so multiply by 1000 to get microsecond value.*/
+        long videoLength = Long.parseLong(fFmpegMediaMetadataRetriever.extractMetadata(fFmpegMediaMetadataRetriever.METADATA_KEY_DURATION))*1000;
+        /* Setting first bitmap to the first frame before going into the loop. */
+        Bitmap frame = fFmpegMediaMetadataRetriever.getFrameAtTime(0);
+        ArrayList<Bitmap> FfmpegFrames = new ArrayList<Bitmap>();
+        for (int i = 0; i < videoLength; i= i + 40000) {/* Retrieving the next frame each time loop starts.
+            * We want to retrieve 25 frames from each second,
+            * ergo the interval between frames should be 40000 microsecond.
+            * The Math : 0, 40000, 80000,...,1000000 => 40000*25 = 1000000 Us = 1 sec*/
+            if(frame==null) break;
+            frame = fFmpegMediaMetadataRetriever.getFrameAtTime(i,FFmpegMediaMetadataRetriever.OPTION_CLOSEST);
+            FfmpegFrames.add(frame);
         }
-        return allFrames;
+        return FfmpegFrames;
     }
     public ArrayList<Bitmap> MergeFrames(ArrayList<Bitmap> firstFrameList, ArrayList<Bitmap> secondFrameList){
         ArrayList<Bitmap> mergedFrames = new ArrayList<Bitmap>();
@@ -97,7 +82,7 @@ public class MergeVideos {
     }
 
     public void CreateVideoFromFrames(ArrayList<Bitmap> mergedFrames) throws IOException {
-        /* Merging two Frame List from two video files in here. Then creating a video file with those merged Bitmaps.*/
+        /* Merging two Frame List from two video files in here. Then creating a video file with those merged Bitmaps.(Using Jcodec library here.)*/
         SequenceEncoder sequenceEncoder = new SequenceEncoder(new File(Environment.getExternalStorageDirectory(),"/combinedvideo.mp4"));
         Bitmap currentMergedFrame;
         Picture bitmapToPicture;
@@ -108,15 +93,13 @@ public class MergeVideos {
         }
         sequenceEncoder.finish();
     }
-
+    /* The converesion methods below taken from: http://stackoverflow.com/q/34672157*/
     // convert from Bitmap to Picture (jcodec native structure)
     public Picture fromBitmap(Bitmap src) {
         Picture dst = Picture.create(src.getWidth(), src.getHeight(), ColorSpace.RGB);
         fromBitmap(src, dst);
         return dst;
     }
-
-
 
     public void fromBitmap(Bitmap src, Picture dst) {
         int[] dstData = dst.getPlaneData(0);
