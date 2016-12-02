@@ -37,7 +37,7 @@ public class MergeVideos {
         /* Setting first bitmap to the first frame before going into the loop. */
         Bitmap frame = mediaMetadataRetriever.getFrameAtTime(0);
         ArrayList<Bitmap> allFrames = new ArrayList<Bitmap>();
-        int frameCounter = 0;/* This variable will keep increasing for saving bitmaps one-by-one to the Bitmap[] array*/
+        int frameCounter = 0;/* Thiss variable will keep increasing for saving bitmaps one-by-one to the Bitmap[] array*/
         for (int i = 0; i<=videoLength;i=i+40000) {/*Increasing the counter by 40000 so we can get 25 frames from one second.*/
             if(frame==null) break;
             /* Retrieving the next frame each time loop starts.
