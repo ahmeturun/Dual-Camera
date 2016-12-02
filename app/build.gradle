@@ -26,4 +26,6 @@ dependencies {
     })
     testCompile 'junit:junit:4.12'
     compile 'com.readystatesoftware.sqliteasset:sqliteassethelper:2.0.1'
+    compile 'org.jcodec:jcodec-android:0.1.9'
+//    compile 'com.github.wseemann:FFmpegMediaMetadataRetriever:1.0.14'
 }

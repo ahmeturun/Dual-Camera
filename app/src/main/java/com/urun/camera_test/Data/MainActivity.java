@@ -21,11 +21,14 @@ import android.widget.Toast;
 import com.urun.camera_test.CameraAccess.CameraPreview;
 import com.urun.camera_test.R;
 
+import org.jcodec.api.JCodecException;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 
 
 public class MainActivity extends Activity{
@@ -142,9 +145,9 @@ public class MainActivity extends Activity{
             public void onClick(View v) {
                 captureFlag = !captureFlag;
                 // Starting record for back camera
-                startRecording(cameraPreview_front,mediaRecorder_front);
+                startRecording(cameraPreview_front,mediaRecorder_front,"back",0);
                 // Starting record for front camera
-                startRecording(cameraPreview_back,mediaRecorder_back);
+                startRecording(cameraPreview_back,mediaRecorder_back,"front",1);
                 if(!captureFlag) {
                     // Setting UI recording messages to visible
                     recordBack.setVisibility(View.VISIBLE);
@@ -156,6 +159,35 @@ public class MainActivity extends Activity{
                     mediaRecorder_front = new MediaRecorder();
                     mediaRecorder_back = new MediaRecorder();
                     Toast.makeText(MainActivity.this, "Media Recorded!", Toast.LENGTH_SHORT).show();
+
+                    MergeVideos workOnMerge = new MergeVideos(getApplicationContext());
+                    /* Getting frames from video taken from back camera. */
+                    ArrayList<Bitmap> backFrames = null;
+                    try {
+                        backFrames = workOnMerge.RetrieveFramesAsBitmapArray(Environment.getExternalStorageDirectory()+"/back.mp4");
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    } catch (JCodecException e) {
+                        e.printStackTrace();
+                    }
+                    /* Getting frames from video taken from front camera. */
+                    ArrayList<Bitmap> frontFrames = null;
+                    try {
+                        frontFrames = workOnMerge.RetrieveFramesAsBitmapArray(Environment.getExternalStorageDirectory()+"/front.mp4");
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    } catch (JCodecException e) {
+                        e.printStackTrace();
+                    }
+                    /* Merging all the frames that are belong to the same moment as up-down frame. */
+                    ArrayList<Bitmap> mergedFrames = workOnMerge.MergeFrames(backFrames,frontFrames);
+
+                    try {
+                        workOnMerge.CreateVideoFromFrames(mergedFrames);
+                        Log.e("merged_video: ","videos merged succesfully.");
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
 
             }
@@ -178,21 +210,21 @@ public class MainActivity extends Activity{
         Toast.makeText(this, "jpeg taken as bitmap.", Toast.LENGTH_SHORT).show();
     }
 
-    public void startRecording(CameraPreview cameraPreview,MediaRecorder mediaRecorder){
+    public void startRecording(CameraPreview cameraPreview,MediaRecorder mediaRecorder, String videoName,int cameraId){
         if(!captureFlag) {
             try {
                 cameraPreview.camera.unlock();
                 try {
                     mediaRecorder.setCamera(cameraPreview.camera);
                     mediaRecorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
-                    mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.DEFAULT);
-                    mediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.DEFAULT);
-//                    mediaRecorder.setAudioSource(MediaRecorder.AudioSource.CAMCORDER);
-//                    CamcorderProfile camcorderProfile = CamcorderProfile.get(0,CamcorderProfile.QUALITY_LOW);
+                    mediaRecorder.setAudioSource(MediaRecorder.AudioSource.CAMCORDER);
+                    CamcorderProfile camcorderProfile = CamcorderProfile.get(cameraId,CamcorderProfile.QUALITY_LOW);
 //                    camcorderProfile.videoFrameHeight = 1920;
 //                    camcorderProfile.videoFrameWidth = 1080;
-//                    mediaRecorder.setProfile(camcorderProfile);
-                    mediaRecorder.setOutputFile(Environment.getExternalStorageDirectory() + "/" + System.currentTimeMillis() + "exp.mp4");
+                    mediaRecorder.setProfile(camcorderProfile);
+                    mediaRecorder.setOutputFile(Environment.getExternalStorageDirectory() + "/"+videoName+".mp4");
+//                    mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.DEFAULT);
+//                    mediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.DEFAULT);
                     mediaRecorder.setMaxFileSize(50000000);
                     try {
                         mediaRecorder.prepare();
