@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.os.AsyncTask;
 import android.os.Environment;
 
 import org.jcodec.api.JCodecException;
@@ -46,16 +47,19 @@ public class MergeVideos {
         /* Setting first bitmap to the first frame before going into the loop. */
         Bitmap frame = fFmpegMediaMetadataRetriever.getFrameAtTime(0);
         ArrayList<Bitmap> FfmpegFrames = new ArrayList<Bitmap>();
-        for (int i = 0; i < videoLength; i= i + 40000) {/* Retrieving the next frame each time loop starts.
+        for (int i = 0; i < videoLength; i= i + 66666) {/* Retrieving the next frame each time loop starts.
             * We want to retrieve 25 frames from each second,
             * ergo the interval between frames should be 40000 microsecond.
             * The Math : 0, 40000, 80000,...,1000000 => 40000*25 = 1000000 Us = 1 sec*/
-            if(frame==null) break;
             frame = fFmpegMediaMetadataRetriever.getFrameAtTime(i,FFmpegMediaMetadataRetriever.OPTION_CLOSEST);
+            if(frame==null) break;
             FfmpegFrames.add(frame);
+            frame = null;
         }
         return FfmpegFrames;
     }
+
+
     public ArrayList<Bitmap> MergeFrames(ArrayList<Bitmap> firstFrameList, ArrayList<Bitmap> secondFrameList){
         ArrayList<Bitmap> mergedFrames = new ArrayList<Bitmap>();
         Bitmap bitmapFirstFrame, bitmapSecondFrame;
@@ -71,12 +75,17 @@ public class MergeVideos {
         for (int i = 0; i < smallerFrameRate; i++) {
             bitmapFirstFrame = firstFrameList.get(i);
             bitmapSecondFrame = secondFrameList.get(i);
-            bitmapResult = Bitmap.createBitmap(bitmapFirstFrame.getWidth(), bitmapFirstFrame.getHeight() * 2,Bitmap.Config.ARGB_8888);
+            bitmapResult = Bitmap.createBitmap(bitmapFirstFrame.getWidth(), bitmapFirstFrame.getHeight() * 2,Bitmap.Config.RGB_565);
             canvas = new Canvas(bitmapResult);
             paint = new Paint();
             canvas.drawBitmap(bitmapFirstFrame, 0,0,paint);
             canvas.drawBitmap(bitmapSecondFrame,0,bitmapFirstFrame.getHeight(),paint);
             mergedFrames.add(bitmapResult);
+            bitmapFirstFrame.recycle();
+            bitmapSecondFrame.recycle();
+            bitmapFirstFrame = null;
+            bitmapSecondFrame = null;
+
         }
         return mergedFrames;
     }
@@ -90,6 +99,8 @@ public class MergeVideos {
             currentMergedFrame = mergedFrames.get(i);
             bitmapToPicture = fromBitmap(currentMergedFrame);
             sequenceEncoder.encodeNativeFrame(bitmapToPicture);
+            currentMergedFrame.recycle();
+            currentMergedFrame = null;
         }
         sequenceEncoder.finish();
     }

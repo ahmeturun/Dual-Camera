@@ -156,7 +156,7 @@ public class MainActivity extends Activity{
                 }else{
                     recordBack.setVisibility(View.INVISIBLE);
                     recordFront.setVisibility(View.INVISIBLE);
-                    // Recording session has ended, initialing mediaRecorders for later usage
+                    // Recording session has ended, initializing mediaRecorders for later usage
                     mediaRecorder_front = new MediaRecorder();
                     mediaRecorder_back = new MediaRecorder();
                     Toast.makeText(MainActivity.this, "Media Recorded!", Toast.LENGTH_SHORT).show();
