@@ -160,37 +160,43 @@ public class MainActivity extends Activity{
                     mediaRecorder_front = new MediaRecorder();
                     mediaRecorder_back = new MediaRecorder();
                     Toast.makeText(MainActivity.this, "Media Recorded!", Toast.LENGTH_SHORT).show();
-
                     MergeVideos workOnMerge = new MergeVideos(getApplicationContext());
-                    /* Getting frames from video taken from back camera. */
-                    ArrayList<Bitmap> backFrames = null;
-                    try {
-                        backFrames = workOnMerge.RetrieveFramesAsBitmapArray(Environment.getExternalStorageDirectory()+"/back.mp4");
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    } catch (JCodecException e) {
-                        e.printStackTrace();
-                    } catch (Exception e) {
-                        Log.e("retrieving_prob:",e.getMessage());
-                    }
-                    /* Getting frames from video taken from front camera. */
-                    ArrayList<Bitmap> frontFrames = null;
-                    try {
-                        frontFrames = workOnMerge.RetrieveFramesAsBitmapArray(Environment.getExternalStorageDirectory()+"/front.mp4");
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    } catch (JCodecException e) {
-                        e.printStackTrace();
-                    }
-                    /* Merging all the frames that are belong to the same moment as up-down frame. */
-                    ArrayList<Bitmap> mergedFrames = workOnMerge.MergeFrames(backFrames,frontFrames);
 
                     try {
-                        workOnMerge.CreateVideoFromFrames(mergedFrames);
-                        Log.e("merged_video: ","videos merged succesfully.");
+                        workOnMerge.AllStepsAtOnce(Environment.getExternalStorageDirectory()+"/back.mp4",Environment.getExternalStorageDirectory()+"/front.mp4");
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
+
+//                    /* Getting frames from video taken from back camera. */
+//                    ArrayList<Bitmap> backFrames = null;
+//                    try {
+//                        backFrames = workOnMerge.RetrieveFramesAsBitmapArray(Environment.getExternalStorageDirectory()+"/back.mp4");
+//                    } catch (IOException e) {
+//                        e.printStackTrace();
+//                    } catch (JCodecException e) {
+//                        e.printStackTrace();
+//                    } catch (Exception e) {
+//                        Log.e("retrieving_prob:",e.getMessage());
+//                    }
+//                    /* Getting frames from video taken from front camera. */
+//                    ArrayList<Bitmap> frontFrames = null;
+//                    try {
+//                        frontFrames = workOnMerge.RetrieveFramesAsBitmapArray(Environment.getExternalStorageDirectory()+"/front.mp4");
+//                    } catch (IOException e) {
+//                        e.printStackTrace();
+//                    } catch (JCodecException e) {
+//                        e.printStackTrace();
+//                    }
+//                    /* Merging all the frames that are belong to the same moment as up-down frame. */
+//                    ArrayList<Bitmap> mergedFrames = workOnMerge.MergeFrames(backFrames,frontFrames);
+//
+//                    try {
+//                        workOnMerge.CreateVideoFromFrames(mergedFrames);
+//                        Log.e("merged_video: ","videos merged succesfully.");
+//                    } catch (IOException e) {
+//                        e.printStackTrace();
+//                    }
                 }
 
             }
@@ -221,6 +227,7 @@ public class MainActivity extends Activity{
                     mediaRecorder.setCamera(cameraPreview.camera);
                     mediaRecorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
                     mediaRecorder.setAudioSource(MediaRecorder.AudioSource.CAMCORDER);
+                    mediaRecorder.setOrientationHint(90);
 //                    mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
                     CamcorderProfile camcorderProfile = CamcorderProfile.get(cameraId,CamcorderProfile.QUALITY_480P);
 //                    camcorderProfile.videoFrameHeight = 1920;
