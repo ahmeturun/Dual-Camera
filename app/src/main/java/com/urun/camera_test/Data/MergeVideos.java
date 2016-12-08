@@ -91,20 +91,6 @@ public class MergeVideos {
         // except the part where sequenceEncoder.encodenativeframe() starts.
         //there is going to be a bigger loop over where we create runnables and this for loop will count until: framesize/runnableobjects.
         //int the bigger loop run sequenceencoder.encodeNativeFrame() as much as the bitmaps created by runnables(the number of runnable created).
-
-        for (int i = 0; i <videoLength/5 ; i = i + 40000) {
-            //Bitmap1 = runnable.run();
-            //Bitmap2 = runnable.run();
-            //Bitmap3 = runnable.run();
-            //Bitmap4 = runnable.run();
-            //Bitmap5 = runnable.run();
-            //sequenceEncoder.encodeNativeFrame(Bitmap1);
-            //sequenceEncoder.encodeNativeFrame(Bitmap2);
-            //sequenceEncoder.encodeNativeFrame(Bitmap3);
-            //sequenceEncoder.encodeNativeFrame(Bitmap4);
-            //sequenceEncoder.encodeNativeFrame(Bitmap5);
-        }
-
         for (int i = 0; i < videoLength; i= i + 40000) {
             frameBack = fFmpegMediaMetadataRetrieverBack.getFrameAtTime(i,FFmpegMediaMetadataRetriever.OPTION_CLOSEST);
             frameFront = fFmpegMediaMetadataRetrieverFront.getFrameAtTime(i,FFmpegMediaMetadataRetriever.OPTION_CLOSEST);

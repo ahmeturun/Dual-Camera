@@ -1,7 +1,6 @@
 package com.urun.camera_test.Data;
 
 import android.app.Activity;
-import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -11,11 +10,6 @@ import android.media.CamcorderProfile;
 import android.media.MediaRecorder;
 import android.os.Bundle;
 import android.os.Environment;
-import android.renderscript.Allocation;
-import android.renderscript.Element;
-import android.renderscript.RenderScript;
-import android.renderscript.ScriptIntrinsicYuvToRGB;
-import android.renderscript.Type;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -27,16 +21,10 @@ import android.widget.Toast;
 import com.urun.camera_test.CameraAccess.CameraPreview;
 import com.urun.camera_test.R;
 
-import org.jcodec.api.JCodecException;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.concurrent.Exchanger;
 
 
 public class MainActivity extends Activity{
@@ -54,115 +42,44 @@ public class MainActivity extends Activity{
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        //getting the number of camera exists on the device
-        int numberOfCameras= Camera.getNumberOfCameras();
-        Toast.makeText(this, "Number Of Cameras: "+numberOfCameras, Toast.LENGTH_SHORT).show();
-        //textview for recording message on the UI
+        /*textview for recording message on the UI*/
         final TextView recordBack = (TextView)findViewById(R.id.recording_text_back);
         final TextView recordFront = (TextView)findViewById(R.id.recording_text_front);
 
-        //setting captureFlag to false at the beginning of the activity
+        /*setting captureFlag to false at the beginning of the activity.(as not recording)*/
         captureFlag = true;
 
-        // Camera preview from FRONT
+        /* Initializing camera preview from FRONT*/
         surfaceView_front = (SurfaceView) findViewById(R.id.camera_preview_front);
         surfaceHolder_front = surfaceView_front.getHolder();
         cameraPreview_front = new CameraPreview(getApplicationContext(),camera_front,surfaceHolder_front,0);
         surfaceHolder_front.addCallback(cameraPreview_front);
         surfaceHolder_front.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
-        // Camera preview from BACK
+        /* Initializing camera preview from BACK*/
         surfaceView_back = (SurfaceView) findViewById(R.id.camera_preview_back);
         surfaceHolder_back = surfaceView_back.getHolder();
         cameraPreview_back = new CameraPreview(getApplicationContext(),camera_back,surfaceHolder_back,1);
-        Toast.makeText(MainActivity.this, "CameraPreview Object has been created", Toast.LENGTH_SHORT).show();
         surfaceHolder_back.addCallback(cameraPreview_back);
         surfaceHolder_back.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 
-        // Setting onClick function for "capture" button
+        /* Setting onClick function for "capture" button*/
         capture_front = (Button) findViewById(R.id.button_capture_back);
         capture_front.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 // Taking picture from front camera(name references are switched so front takes back camera parameters. Don't get confused.)
-                if(cameraPreview_front!=null) {
-                    cameraPreview_front.camera.takePicture(null,null,new Camera.PictureCallback() {
-                        @Override
-                        public void onPictureTaken(byte[] data, Camera camera) {
-                            FileOutputStream outStream = null;
-                            ++pictureNumber;
-                            try {
-                                outStream = new FileOutputStream(String.format("/sdcard/%dfront.jpg", pictureNumber));
-                                outStream.write(data);
-                                outStream.close();
-                                Log.e("picture_saved", "Picture has been saved succesfully: " + pictureNumber);
-                                camera.release();
-                                surfaceHolder_back.addCallback(cameraPreview_back);
-                                surfaceHolder_back.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
-                            } catch (FileNotFoundException e) {
-                                e.printStackTrace();
-                                Log.e("file_not_found: ","couldn't save the file "+e.getMessage());
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                                Log.e("IOexception: ","couldn't save the file "+e.getMessage());
-                            } finally {
-                            }
-                            Log.e("Log", "onPictureTaken - jpeg");
-                        }
-                    });
-                    Toast.makeText(MainActivity.this, "Picture Has Been Taken", Toast.LENGTH_SHORT).show();
-                }else {
-                    Toast.makeText(MainActivity.this, "Failed!!!", Toast.LENGTH_SHORT).show();
-                }
+                takePic(cameraPreview_front);
                 // Taking picture from back camera
-                if(cameraPreview_back!=null) {
-                    cameraPreview_back.camera.takePicture(null,null,new Camera.PictureCallback() {
-                        @Override
-                        public void onPictureTaken(byte[] data, Camera camera) {
-                            FileOutputStream outStream = null;
-                            try {
-                                outStream = new FileOutputStream(String.format("/sdcard/%dback.jpg", pictureNumber));
-                                outStream.write(data);
-                                outStream.close();
-                                Log.e("picture_saved", "Picture has been saved succesfully: " + System.currentTimeMillis());
-                                camera.release();
-                                mergePicture();
-                            } catch (FileNotFoundException e) {
-                                e.printStackTrace();
-                                Log.e("file_not_found: ","couldn't save the file "+e.getMessage());
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                                Log.e("IOexception: ","couldn't save the file "+e.getMessage());
-                            } finally {
-                            }
-                            Log.e("Log", "onPictureTaken - jpeg");
-                        }
-                    });
-                    Toast.makeText(MainActivity.this, "Picture Has Been Taken", Toast.LENGTH_SHORT).show();
-                }else {
-                    Toast.makeText(MainActivity.this, "Failed!!!", Toast.LENGTH_SHORT).show();
-                }
-
+                takePic(cameraPreview_back);
             }
         });
-        // Setting onClick function for capture_video button
+        /* Setting onClick function for capture_video button*/
         capture_video = (Button)findViewById(R.id.capture_video);
         capture_video.setOnClickListener(new View.OnClickListener() {
             MediaRecorder mediaRecorder_front = new MediaRecorder();
             MediaRecorder mediaRecorder_back = new MediaRecorder();
             @Override
             public void onClick(View v) {
-
-                cameraPreview_back.camera.setPreviewCallback(new Camera.PreviewCallback() {
-                    @Override
-                    public void onPreviewFrame(byte[] data, Camera camera) {
-                        long pictureNumber = 0;
-                        int [] argb8888 = new int[320 * 240];
-                        decodeYUV(argb8888, data, 320, 240);
-                        Bitmap bitmap = Bitmap.createBitmap(argb8888, 320, 240, Bitmap.Config.ARGB_8888);
-                        pictureNumber++;
-                    }
-                });
-
                 captureFlag = !captureFlag;
                 // Starting record for back camera
                 startRecording(cameraPreview_front,mediaRecorder_front,"back",0);
@@ -172,23 +89,95 @@ public class MainActivity extends Activity{
                     // Setting UI recording messages to visible
                     recordBack.setVisibility(View.VISIBLE);
                     recordFront.setVisibility(View.VISIBLE);
+
+                    /*Taking frames from front camera while the preview is available*/
+                    getFrameFromPreview(cameraPreview_back,"front");
+                    /*Taking frames from front camera while the preview is available*/
+                    getFrameFromPreview(cameraPreview_front,"back");
+
                 }else{
                     recordBack.setVisibility(View.INVISIBLE);
                     recordFront.setVisibility(View.INVISIBLE);
-                    // Recording session has ended, initializing mediaRecorders for later usage
+                    /* Recording session has ended, initializing mediaRecorders for later usage*/
                     mediaRecorder_front = new MediaRecorder();
                     mediaRecorder_back = new MediaRecorder();
+                    cameraPreview_back.camera.stopPreview();
+                    cameraPreview_front.camera.stopPreview();
                     Toast.makeText(MainActivity.this, "Media Recorded!", Toast.LENGTH_SHORT).show();
                     MergeVideos workOnMerge = new MergeVideos(getApplicationContext());
-//                    try {
-//                        workOnMerge.AllStepsAtOnce(Environment.getExternalStorageDirectory()+"/back.mp4",Environment.getExternalStorageDirectory()+"/front.mp4");
-//                    } catch (IOException e) {
-//                        e.printStackTrace();
-//                    }
+                    try {
+                        workOnMerge.AllStepsAtOnce(Environment.getExternalStorageDirectory()+"/back.mp4",Environment.getExternalStorageDirectory()+"/front.mp4");
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
 
             }
         });
+    }
+
+    private void getFrameFromPreview(CameraPreview cameraPreview, final String savingName) {
+        cameraPreview.camera.setPreviewCallback(new Camera.PreviewCallback() {
+            long pictureNumber = 0;/*pictureNumber is keeping the frame number and we're using this value while we're saving the frame to the device.*/
+            long timeMillisForReference = System.nanoTime()/100;
+            /*timeDifferenceCoefficient will increase the difference factor between first frame time value and
+            *current frame time value(starting with 40000) as multiply of 40000 e.g. for first frame and second frame time difference= 40000*1,
+            *for first frame and third frame time difference = 40000*2 ...*/
+            int timeDifferenceCoefficient = 1;
+            @Override
+            public void onPreviewFrame(byte[] data, Camera camera) {
+                long timeMillisForCapture = System.nanoTime()/100;
+                if(timeMillisForReference + 40000*timeDifferenceCoefficient <= timeMillisForCapture  ) {
+                    int[] argb8888 = new int[320 * 240];/*the reason for setting this arrays size to 320*240 is that we have to set the array according to preview width and height.*/
+                    decodeYUV(argb8888, data, 320, 240);
+                    Bitmap bitmap = Bitmap.createBitmap(argb8888, 320, 240, Bitmap.Config.ARGB_8888);
+                    File currFrame = new File(Environment.getExternalStorageDirectory() + "/"+savingName + Long.toString(pictureNumber) + ".jpg");
+                    FileOutputStream fileOutputStream = null;
+                    try {
+                        fileOutputStream = new FileOutputStream(currFrame);
+                        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fileOutputStream);
+                        fileOutputStream.flush();
+                        fileOutputStream.close();
+                        pictureNumber++;/*increasing pictureNumber to save the next frame with its index.*/
+                        timeMillisForReference = timeMillisForCapture;
+                        timeDifferenceCoefficient++;/*Increasing the coefficient to set the time difference between  next frame and first frame correctly.*/
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+            }
+        });
+    }
+
+    private void takePic(CameraPreview cameraPreview_front) {
+        if(cameraPreview_front!=null) {
+            cameraPreview_front.camera.takePicture(null,null,new Camera.PictureCallback() {
+                @Override
+                public void onPictureTaken(byte[] data, Camera camera) {
+                    FileOutputStream outStream = null;
+                    ++pictureNumber;
+                    try {
+                        outStream = new FileOutputStream(String.format("/sdcard/%dfront.jpg", pictureNumber));
+                        outStream.write(data);
+                        outStream.close();
+                        Log.e("picture_saved", "Picture has been saved succesfully: " + pictureNumber);
+                        camera.release();
+                    } catch (FileNotFoundException e) {
+                        e.printStackTrace();
+                        Log.e("file_not_found: ","couldn't save the file "+e.getMessage());
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        Log.e("IOexception: ","couldn't save the file "+e.getMessage());
+                    } finally {
+                    }
+                    Log.e("Log", "onPictureTaken - jpeg");
+                }
+            });
+            Toast.makeText(MainActivity.this, "Picture Has Been Taken", Toast.LENGTH_SHORT).show();
+        }else {
+            Toast.makeText(MainActivity.this, "Failed!!!", Toast.LENGTH_SHORT).show();
+        }
     }
 
     public void mergePicture() throws IOException {
@@ -246,9 +235,10 @@ public class MainActivity extends Activity{
             }
         }
     }
-
+    /*Below function has taken from: http://stackoverflow.com/questions/9325861/converting-yuv-rgbimage-processing-yuv-during-onpreviewframe-in-android
+    * It's been used for converting the format of picture data type returned from onPreviewFrame.*/
     // decode Y, U, and V values on the YUV 420 buffer described as YCbCr_422_SP by Android
-// David Manpearl 081201
+    // David Manpearl 081201
     public void decodeYUV(int[] out, byte[] fg, int width, int height)
             throws NullPointerException, IllegalArgumentException {
         int sz = width * height;
