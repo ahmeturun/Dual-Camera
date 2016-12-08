@@ -1,7 +1,10 @@
 package com.urun.camera_test.CameraAccess;
 
 import android.content.Context;
+import android.graphics.ImageFormat;
 import android.hardware.Camera;
+import android.hardware.camera2.CameraDevice;
+import android.os.Environment;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -10,6 +13,7 @@ import android.widget.Toast;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 
 /**
  * Created by ahmet on 10/5/2016.
@@ -20,6 +24,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     public Camera camera;
     int camera_id;
     private static String TAG = "camera_error";
+    long pictureNumber = 0;
 
     public CameraPreview(Context context, Camera camera, SurfaceHolder surfaceHolder,int camera_id) {
         super(context);
@@ -50,9 +55,10 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         param = camera.getParameters();
 
         // modify parameter
-        param.setPreviewSize(surfaceHolder.getSurfaceFrame().width(), surfaceHolder.getSurfaceFrame().height());
-//        param.setPreviewSize(320, 240);
-        Toast.makeText(getContext(), "width:"+surfaceHolder.getSurfaceFrame().width()+"\nheight: "+surfaceHolder.getSurfaceFrame().height()+"", Toast.LENGTH_SHORT).show();
+//        param.setPreviewSize(surfaceHolder.getSurfaceFrame().width(), surfaceHolder.getSurfaceFrame().height());
+        param.setPreviewSize(320, 240);
+//        param.setPreviewFormat(ImageFormat.RGB_565);
+//        Toast.makeText(getContext(), "width:"+surfaceHolder.getSurfaceFrame().width()+"\nheight: "+surfaceHolder.getSurfaceFrame().height()+"", Toast.LENGTH_SHORT).show();
         camera.setParameters(param);
         camera.setDisplayOrientation(90);
         try {
@@ -127,16 +133,9 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
             } catch (IOException e) {
                 e.printStackTrace();
                 Log.d("IOexception: ","couldn't save the file "+e.getMessage());
-            } finally {
             }
             Log.d("Log", "onPictureTaken - jpeg");
         }
     };
-
-    public void takePic(){
-        if(camera!=null) {
-            camera.takePicture(null, null, jpegCallback);
-        }
-    }
 
 }
