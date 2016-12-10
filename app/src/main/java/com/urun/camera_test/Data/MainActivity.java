@@ -8,6 +8,7 @@ import android.graphics.Paint;
 import android.hardware.Camera;
 import android.media.CamcorderProfile;
 import android.media.MediaRecorder;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
@@ -21,11 +22,15 @@ import android.widget.Toast;
 import com.urun.camera_test.CameraAccess.CameraPreview;
 import com.urun.camera_test.R;
 
+import org.jcodec.api.SequenceEncoder;
+import org.jcodec.common.model.ColorSpace;
+import org.jcodec.common.model.Picture;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-
+import java.sql.Struct;
 
 public class MainActivity extends Activity{
 
@@ -67,9 +72,9 @@ public class MainActivity extends Activity{
         capture_front.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // Taking picture from front camera(name references are switched so front takes back camera parameters. Don't get confused.)
+                /* Taking picture from front camera(name references are switched so front takes back camera parameters. Don't get confused.)*/
                 takePic(cameraPreview_front);
-                // Taking picture from back camera
+                /* Taking picture from back camera*/
                 takePic(cameraPreview_back);
             }
         });
@@ -78,6 +83,7 @@ public class MainActivity extends Activity{
         capture_video.setOnClickListener(new View.OnClickListener() {
             MediaRecorder mediaRecorder_front = new MediaRecorder();
             MediaRecorder mediaRecorder_back = new MediaRecorder();
+            asynchoranization asyncTheProcess;
             @Override
             public void onClick(View v) {
                 captureFlag = !captureFlag;
@@ -89,11 +95,12 @@ public class MainActivity extends Activity{
                     // Setting UI recording messages to visible
                     recordBack.setVisibility(View.VISIBLE);
                     recordFront.setVisibility(View.VISIBLE);
-
-                    /*Taking frames from front camera while the preview is available*/
-                    getFrameFromPreview(cameraPreview_back,"front");
-                    /*Taking frames from front camera while the preview is available*/
-                    getFrameFromPreview(cameraPreview_front,"back");
+                    try {
+                        asyncTheProcess = new asynchoranization();
+                        asyncTheProcess.execute(cameraPreview_back,cameraPreview_front);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
 
                 }else{
                     recordBack.setVisibility(View.INVISIBLE);
@@ -101,15 +108,16 @@ public class MainActivity extends Activity{
                     /* Recording session has ended, initializing mediaRecorders for later usage*/
                     mediaRecorder_front = new MediaRecorder();
                     mediaRecorder_back = new MediaRecorder();
-                    cameraPreview_back.camera.stopPreview();
-                    cameraPreview_front.camera.stopPreview();
+                    asyncTheProcess.cancel(true);
+//                    cameraPreview_back.camera.stopPreview();
+//                    cameraPreview_front.camera.stopPreview();
                     Toast.makeText(MainActivity.this, "Media Recorded!", Toast.LENGTH_SHORT).show();
-                    MergeVideos workOnMerge = new MergeVideos(getApplicationContext());
-                    try {
-                        workOnMerge.AllStepsAtOnce(Environment.getExternalStorageDirectory()+"/back.mp4",Environment.getExternalStorageDirectory()+"/front.mp4");
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+//                    MergeVideos workOnMerge = new MergeVideos(getApplicationContext());
+//                    try {
+//                        workOnMerge.AllStepsAtOnce(Environment.getExternalStorageDirectory()+"/back.mp4",Environment.getExternalStorageDirectory()+"/front.mp4");
+//                    } catch (IOException e) {
+//                        e.printStackTrace();
+//                    }
                 }
 
             }
@@ -148,6 +156,106 @@ public class MainActivity extends Activity{
 
             }
         });
+    }
+    private static Void getFrameFromPreviewBack(CameraPreview cameraPreview) {
+        cameraPreview.camera.setPreviewCallback(new Camera.PreviewCallback() {
+            long pictureNumber = 0;/*pictureNumber is keeping the frame number and we're using this value while we're saving the frame to the device.*/
+            long timeMillisForReference = System.nanoTime()/100;
+            /*timeDifferenceCoefficient will increase the difference factor between first frame time value and
+            *current frame time value(starting with 40000) as multiply of 40000 e.g. for first frame and second frame time difference= 40000*1,
+            *for first frame and third frame time difference = 40000*2 ...*/
+            int timeDifferenceCoefficient = 1;
+            @Override
+            public void onPreviewFrame(byte[] data, Camera camera) {
+                long timeMillisForCapture = System.nanoTime()/100;
+                if(timeMillisForReference + 40000*timeDifferenceCoefficient <= timeMillisForCapture  ) {
+                    int[] argb8888 = new int[320 * 240];/*the reason for setting this arrays size to 320*240 is that we have to set the array according to preview width and height.*/
+                    decodeYUV(argb8888, data, 320, 240);
+                    Bitmap bitmap = Bitmap.createBitmap(argb8888, 320, 240, Bitmap.Config.ARGB_8888);
+                    File currFrame = new File(Environment.getExternalStorageDirectory() + "/back"+ Long.toString(pictureNumber) + ".jpg");
+                    FileOutputStream fileOutputStream = null;
+                    try {
+                        fileOutputStream = new FileOutputStream(currFrame);
+                        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fileOutputStream);
+                        fileOutputStream.flush();
+                        fileOutputStream.close();
+                        pictureNumber++;/*increasing pictureNumber to save the next frame with its index.*/
+                        timeMillisForReference = timeMillisForCapture;
+                        timeDifferenceCoefficient++;/*Increasing the coefficient to set the time difference between  next frame and first frame correctly.*/
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+            }
+        });
+        return null;
+    }
+    private static Void getFrameFromPreviewFront(CameraPreview cameraPreview) {
+
+        cameraPreview.camera.setPreviewCallback(new Camera.PreviewCallback() {
+            long pictureNumber = 0;/*pictureNumber is keeping the frame number and we're using this value while we're saving the frame to the device.*/
+            long timeMillisForReference = System.nanoTime()/100;
+            /*timeDifferenceCoefficient will increase the difference factor between first frame time value and
+            *current frame time value(starting with 40000) as multiply of 40000 e.g. for first frame and second frame time difference= 40000*1,
+            *for first frame and third frame time difference = 40000*2 ...*/
+            int timeDifferenceCoefficient = 1;
+            @Override
+            public void onPreviewFrame(byte[] data, Camera camera) {
+                long timeMillisForCapture = System.nanoTime()/100;
+                if(timeMillisForReference + 40000*timeDifferenceCoefficient <= timeMillisForCapture  ) {
+                    int[] argb8888 = new int[320 * 240];/*the reason for setting this arrays size to 320*240 is that we have to set the array according to preview width and height.*/
+                    decodeYUV(argb8888, data, 320, 240);
+                    Bitmap bitmap = Bitmap.createBitmap(argb8888, 320, 240, Bitmap.Config.ARGB_8888);
+                    File currFrame = new File(Environment.getExternalStorageDirectory() + "/front"+ Long.toString(pictureNumber) + ".jpg");
+                    FileOutputStream fileOutputStream = null;
+                    try {
+                        fileOutputStream = new FileOutputStream(currFrame);
+                        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fileOutputStream);
+                        fileOutputStream.flush();
+                        fileOutputStream.close();
+                        pictureNumber++;/*increasing pictureNumber to save the next frame with its index.*/
+                        timeMillisForReference = timeMillisForCapture;
+                        timeDifferenceCoefficient++;/*Increasing the coefficient to set the time difference between  next frame and first frame correctly.*/
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+            }
+        });
+        cameraPreview.camera.setPreviewCallback(new Camera.PreviewCallback() {
+            long pictureNumber = 0;/*pictureNumber is keeping the frame number and we're using this value while we're saving the frame to the device.*/
+            long timeMillisForReference = System.nanoTime()/100;
+            /*timeDifferenceCoefficient will increase the difference factor between first frame time value and
+            *current frame time value(starting with 40000) as multiply of 40000 e.g. for first frame and second frame time difference= 40000*1,
+            *for first frame and third frame time difference = 40000*2 ...*/
+            int timeDifferenceCoefficient = 1;
+            @Override
+            public void onPreviewFrame(byte[] data, Camera camera) {
+                long timeMillisForCapture = System.nanoTime()/100;
+                if(timeMillisForReference + 40000*timeDifferenceCoefficient <= timeMillisForCapture  ) {
+                    int[] argb8888 = new int[320 * 240];/*the reason for setting this arrays size to 320*240 is that we have to set the array according to preview width and height.*/
+                    decodeYUV(argb8888, data, 320, 240);
+                    Bitmap bitmap = Bitmap.createBitmap(argb8888, 320, 240, Bitmap.Config.ARGB_8888);
+                    File currFrame = new File(Environment.getExternalStorageDirectory() + "/front"+ Long.toString(pictureNumber) + ".jpg");
+                    FileOutputStream fileOutputStream = null;
+                    try {
+                        fileOutputStream = new FileOutputStream(currFrame);
+                        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fileOutputStream);
+                        fileOutputStream.flush();
+                        fileOutputStream.close();
+                        pictureNumber++;/*increasing pictureNumber to save the next frame with its index.*/
+                        timeMillisForReference = timeMillisForCapture;
+                        timeDifferenceCoefficient++;/*Increasing the coefficient to set the time difference between  next frame and first frame correctly.*/
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+            }
+        });
+        return null;
     }
 
     private void takePic(CameraPreview cameraPreview_front) {
@@ -196,6 +304,52 @@ public class MainActivity extends Activity{
         Toast.makeText(this, "jpeg taken as bitmap.", Toast.LENGTH_SHORT).show();
     }
 
+
+    public static Picture fromBitmap(Bitmap src) {
+        Picture dst = Picture.create(src.getWidth(), src.getHeight(), ColorSpace.RGB);
+        fromBitmap(src, dst);
+        return dst;
+    }
+
+    public static void fromBitmap(Bitmap src, Picture dst) {
+        int[] dstData = dst.getPlaneData(0);
+        int[] packed = new int[src.getWidth() * src.getHeight()];
+
+        src.getPixels(packed, 0, src.getWidth(), 0, 0, src.getWidth(), src.getHeight());
+
+        for (int i = 0, srcOff = 0, dstOff = 0; i < src.getHeight(); i++) {
+            for (int j = 0; j < src.getWidth(); j++, srcOff++, dstOff += 3) {
+                int rgb = packed[srcOff];
+                dstData[dstOff] = (rgb >> 16) & 0xff;
+                dstData[dstOff + 1] = (rgb >> 8) & 0xff;
+                dstData[dstOff + 2] = rgb & 0xff;
+            }
+        }
+    }
+
+
+    public void AllStepsAtOnce(int index,SequenceEncoder sequenceEncoder) throws IOException {
+        /* Setting first bitmap to the first frame before going into the loop. */
+        Bitmap frameBack = BitmapFactory.decodeFile(Environment.getExternalStorageDirectory() + "/back"+ Long.toString(index) + ".jpg");
+        Bitmap frameFront = BitmapFactory.decodeFile(Environment.getExternalStorageDirectory() + "/front"+ Long.toString(index) + ".jpg");
+
+        Bitmap bitmapResult;
+        Canvas canvas;
+        Paint paint;
+        bitmapResult = Bitmap.createBitmap(frameBack.getWidth() * 2, frameBack.getHeight(),Bitmap.Config.RGB_565);
+        canvas = new Canvas(bitmapResult);
+        paint = new Paint();
+        canvas.drawBitmap(frameBack, 0,0,paint);
+        canvas.drawBitmap(frameFront,frameBack.getWidth(),0,paint);
+        Picture bitmapToPicture = fromBitmap(bitmapResult);
+        sequenceEncoder.encodeNativeFrame(bitmapToPicture);
+//        frameBack.recycle();
+//        frameFront.recycle();
+//        frameBack=null;
+//        frameFront=null;
+//        System.gc();
+    }
+
     public void startRecording(CameraPreview cameraPreview,MediaRecorder mediaRecorder, String videoName,int cameraId){
         if(!captureFlag) {
             try {
@@ -235,11 +389,13 @@ public class MainActivity extends Activity{
             }
         }
     }
+
+
     /*Below function has taken from: http://stackoverflow.com/questions/9325861/converting-yuv-rgbimage-processing-yuv-during-onpreviewframe-in-android
     * It's been used for converting the format of picture data type returned from onPreviewFrame.*/
     // decode Y, U, and V values on the YUV 420 buffer described as YCbCr_422_SP by Android
     // David Manpearl 081201
-    public void decodeYUV(int[] out, byte[] fg, int width, int height)
+    public static void decodeYUV(int[] out, byte[] fg, int width, int height)
             throws NullPointerException, IllegalArgumentException {
         int sz = width * height;
         if (out == null)
@@ -295,6 +451,117 @@ public class MainActivity extends Activity{
         }
 
     }
+
+
+
+    public static class asynchoranization extends AsyncTask<CameraPreview,Void,Bitmap[]> {
+        SequenceEncoder sequenceEncoder = new SequenceEncoder(new File(Environment.getExternalStorageDirectory(),"/combinedvideoAsync.mp4"));
+        int index = 1;
+
+        public asynchoranization() throws IOException {
+        }
+
+        @Override
+        protected Bitmap[] doInBackground(final CameraPreview... params) {
+            params[0].camera.setPreviewCallback(new Camera.PreviewCallback() {
+                long pictureNumber = 0;/*pictureNumber is keeping the frame number and we're using this value while we're saving the frame to the device.*/
+                long oldPictureNumber = pictureNumber;
+                long timeMillisForReference = System.nanoTime()/100;
+                /*timeDifferenceCoefficient will increase the difference factor between first frame time value and
+                *current frame time value(starting with 40000) as multiply of 40000 e.g. for first frame and second frame time difference= 40000*1,
+                *for first frame and third frame time difference = 40000*2 ...*/
+                int timeDifferenceCoefficient = 1;
+                @Override
+                public void onPreviewFrame(byte[] data, Camera camera) {
+                    long timeMillisForCapture = System.nanoTime()/100;
+                    if(timeMillisForReference + 40000*timeDifferenceCoefficient <= timeMillisForCapture  ) {
+                        int[] argb8888 = new int[320 * 240];/*the reason for setting this arrays size to 320*240 is that we have to set the array according to preview width and height.*/
+                        decodeYUV(argb8888, data, 320, 240);
+                        Bitmap bitmap = Bitmap.createBitmap(argb8888, 320, 240, Bitmap.Config.ARGB_8888);
+                        File currFrame = new File(Environment.getExternalStorageDirectory() + "/back"+ Long.toString(pictureNumber) + ".jpg");
+                        FileOutputStream fileOutputStream = null;
+                        try {
+                            fileOutputStream = new FileOutputStream(currFrame);
+                            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fileOutputStream);
+                            fileOutputStream.flush();
+                            fileOutputStream.close();
+                            pictureNumber++;/*increasing pictureNumber to save the next frame with its index.*/
+                            timeMillisForReference = timeMillisForCapture;
+                            timeDifferenceCoefficient++;/*Increasing the coefficient to set the time difference between  next frame and first frame correctly.*/
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                }
+            });
+            params[1].camera.setPreviewCallback(new Camera.PreviewCallback() {
+                long pictureNumber = 0;/*pictureNumber is keeping the frame number and we're using this value while we're saving the frame to the device.*/
+                long timeMillisForReference = System.nanoTime()/100;
+                /*timeDifferenceCoefficient will increase the difference factor between first frame time value and
+                *current frame time value(starting with 40000) as multiply of 40000 e.g. for first frame and second frame time difference= 40000*1,
+                *for first frame and third frame time difference = 40000*2 ...*/
+                int timeDifferenceCoefficient = 1;
+                @Override
+                public void onPreviewFrame(byte[] data, Camera camera) {
+                    long timeMillisForCapture = System.nanoTime()/100;
+                    if(timeMillisForReference + 40000*timeDifferenceCoefficient <= timeMillisForCapture  ) {
+                        int[] argb8888 = new int[320 * 240];/*the reason for setting this arrays size to 320*240 is that we have to set the array according to preview width and height.*/
+                        decodeYUV(argb8888, data, 320, 240);
+                        Bitmap bitmap = Bitmap.createBitmap(argb8888, 320, 240, Bitmap.Config.ARGB_8888);
+                        File currFrame = new File(Environment.getExternalStorageDirectory() + "/front"+ Long.toString(pictureNumber) + ".jpg");
+                        FileOutputStream fileOutputStream = null;
+                        try {
+                            fileOutputStream = new FileOutputStream(currFrame);
+                            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fileOutputStream);
+                            fileOutputStream.flush();
+                            fileOutputStream.close();
+                            pictureNumber++;/*increasing pictureNumber to save the next frame with its index.*/
+                            timeMillisForReference = timeMillisForCapture;
+                            timeDifferenceCoefficient++;/*Increasing the coefficient to set the time difference between  next frame and first frame correctly.*/
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                }
+            });
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Bitmap[] bitmaps) {
+            try {
+                Bitmap frameBack = BitmapFactory.decodeFile(Environment.getExternalStorageDirectory() + "/back"+ Long.toString(index) + ".jpg");
+                Bitmap frameFront = BitmapFactory.decodeFile(Environment.getExternalStorageDirectory() + "/front"+ Long.toString(index) + ".jpg");
+
+                Bitmap bitmapResult;
+                Canvas canvas;
+                Paint paint;
+                bitmapResult = Bitmap.createBitmap(frameBack.getWidth() * 2, frameBack.getHeight(),Bitmap.Config.RGB_565);
+                canvas = new Canvas(bitmapResult);
+                paint = new Paint();
+                canvas.drawBitmap(frameBack, 0,0,paint);
+                canvas.drawBitmap(frameFront,frameBack.getWidth(),0,paint);
+                Picture bitmapToPicture = fromBitmap(bitmapResult);
+                sequenceEncoder.encodeNativeFrame(bitmapToPicture);
+                Log.e("sequenceEncoder: ","test");
+                index++;
+            } catch (IOException e) {
+                Log.e("sequenceEncoder: ",e.getMessage());
+            }
+        }
+
+        @Override
+        protected void onCancelled() {
+            try {
+                sequenceEncoder.finish();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
 
     @Override
     protected void onPause() {
