@@ -42,6 +42,7 @@ public class MainActivity extends Activity{
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
         /*textview for recording message on the UI*/
         final TextView recordBack = (TextView)findViewById(R.id.recording_text_back);
         final TextView recordFront = (TextView)findViewById(R.id.recording_text_front);
@@ -62,6 +63,7 @@ public class MainActivity extends Activity{
         surfaceHolder_back.addCallback(cameraPreview_back);
         surfaceHolder_back.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 
+
         /* Setting onClick function for "capture" button*/
         capture_front = (Button) findViewById(R.id.button_capture_back);
         capture_front.setOnClickListener(new View.OnClickListener() {
@@ -73,82 +75,64 @@ public class MainActivity extends Activity{
                 takePic(cameraPreview_back);
             }
         });
+
+
         /* Setting onClick function for capture_video button*/
         capture_video = (Button)findViewById(R.id.capture_video);
-        capture_video.setOnClickListener(new View.OnClickListener() {
-            MediaRecorder mediaRecorder_front = new MediaRecorder();
-            MediaRecorder mediaRecorder_back = new MediaRecorder();
-            @Override
-            public void onClick(View v) {
+        capture_video.setOnClickListener(v -> {
+            try {
+                final MergeVideos mergingInstance = new MergeVideos(getApplicationContext());
                 captureFlag = !captureFlag;
-                // Starting record for back camera
-                startRecording(cameraPreview_front,mediaRecorder_front,"back",0);
-                // Starting record for front camera
-                startRecording(cameraPreview_back,mediaRecorder_back,"front",1);
-                if(!captureFlag) {
+                if (!captureFlag) {
                     // Setting UI recording messages to visible
                     recordBack.setVisibility(View.VISIBLE);
                     recordFront.setVisibility(View.VISIBLE);
+                /*Setting the Threads.*/
+                    Runnable RFrameBack = () -> mergingInstance.getFrameFromPreview(cameraPreview_front, "back");
+                    Thread threadFrontFrame = new Thread(RFrameBack);
+                    threadFrontFrame.start();
+                    threadFrontFrame.join();
+                    Runnable RFrameFront = () -> mergingInstance.getFrameFromPreview(cameraPreview_back, "front");
+                    Thread threadBackFrame = new Thread(RFrameFront);
+                    threadBackFrame.start();
+                    threadBackFrame.join();
+                    Runnable RMergeFrame = () -> {
+                        try {
+                            mergingInstance.MergeFrames();
 
-                    /*Taking frames from front camera while the preview is available*/
-                    getFrameFromPreview(cameraPreview_back,"front");
-                    /*Taking frames from front camera while the preview is available*/
-                    getFrameFromPreview(cameraPreview_front,"back");
-
-                }else{
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    };
+                    Thread threadMerge = new Thread(RMergeFrame);
+                    threadMerge.start();
+                    threadMerge.join();
+                    Runnable REncodeFrame = () -> mergingInstance.EncodeTheFrame();
+                    Thread threadEncodeFrame = new Thread(REncodeFrame);
+                    threadEncodeFrame.start();
+                    threadEncodeFrame.join();
+                } else {
                     recordBack.setVisibility(View.INVISIBLE);
                     recordFront.setVisibility(View.INVISIBLE);
-                    /* Recording session has ended, initializing mediaRecorders for later usage*/
-                    mediaRecorder_front = new MediaRecorder();
-                    mediaRecorder_back = new MediaRecorder();
-                    cameraPreview_back.camera.stopPreview();
-                    cameraPreview_front.camera.stopPreview();
-                    Toast.makeText(MainActivity.this, "Media Recorded!", Toast.LENGTH_SHORT).show();
-                    MergeVideos workOnMerge = new MergeVideos(getApplicationContext());
-                    try {
-                        workOnMerge.AllStepsAtOnce(Environment.getExternalStorageDirectory()+"/back.mp4",Environment.getExternalStorageDirectory()+"/front.mp4");
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+                    Runnable RFinishEncode = () -> {
+                        try {
+                            mergingInstance.finishDecoding();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    };
+                    Thread threadEndEncoding = new Thread(RFinishEncode);
+                    threadEndEncoding.start();
                 }
-
+            }catch (IOException e){
+                Log.v("button_click: ",e.getMessage());
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
+
         });
     }
 
-    private void getFrameFromPreview(CameraPreview cameraPreview, final String savingName) {
-        cameraPreview.camera.setPreviewCallback(new Camera.PreviewCallback() {
-            long pictureNumber = 0;/*pictureNumber is keeping the frame number and we're using this value while we're saving the frame to the device.*/
-            long timeMillisForReference = System.nanoTime()/100;
-            /*timeDifferenceCoefficient will increase the difference factor between first frame time value and
-            *current frame time value(starting with 40000) as multiply of 40000 e.g. for first frame and second frame time difference= 40000*1,
-            *for first frame and third frame time difference = 40000*2 ...*/
-            int timeDifferenceCoefficient = 1;
-            @Override
-            public void onPreviewFrame(byte[] data, Camera camera) {
-                long timeMillisForCapture = System.nanoTime()/100;
-                if(timeMillisForReference + 40000*timeDifferenceCoefficient <= timeMillisForCapture  ) {
-                    int[] argb8888 = new int[320 * 240];/*the reason for setting this arrays size to 320*240 is that we have to set the array according to preview width and height.*/
-                    decodeYUV(argb8888, data, 320, 240);
-                    Bitmap bitmap = Bitmap.createBitmap(argb8888, 320, 240, Bitmap.Config.ARGB_8888);
-                    File currFrame = new File(Environment.getExternalStorageDirectory() + "/"+savingName + Long.toString(pictureNumber) + ".jpg");
-                    FileOutputStream fileOutputStream = null;
-                    try {
-                        fileOutputStream = new FileOutputStream(currFrame);
-                        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fileOutputStream);
-                        fileOutputStream.flush();
-                        fileOutputStream.close();
-                        pictureNumber++;/*increasing pictureNumber to save the next frame with its index.*/
-                        timeMillisForReference = timeMillisForCapture;
-                        timeDifferenceCoefficient++;/*Increasing the coefficient to set the time difference between  next frame and first frame correctly.*/
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-
-            }
-        });
-    }
 
     private void takePic(CameraPreview cameraPreview_front) {
         if(cameraPreview_front!=null) {
@@ -196,105 +180,6 @@ public class MainActivity extends Activity{
         Toast.makeText(this, "jpeg taken as bitmap.", Toast.LENGTH_SHORT).show();
     }
 
-    public void startRecording(CameraPreview cameraPreview,MediaRecorder mediaRecorder, String videoName,int cameraId){
-        if(!captureFlag) {
-            try {
-                cameraPreview.camera.unlock();
-                try {
-                    mediaRecorder.setCamera(cameraPreview.camera);
-                    mediaRecorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
-                    mediaRecorder.setAudioSource(MediaRecorder.AudioSource.CAMCORDER);
-                    mediaRecorder.setOrientationHint(90);
-//                    mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
-                    CamcorderProfile camcorderProfile = CamcorderProfile.get(cameraId,CamcorderProfile.QUALITY_480P);
-//                    camcorderProfile.videoFrameHeight = 1920;
-//                    camcorderProfile.videoFrameWidth = 1080;
-                    mediaRecorder.setProfile(camcorderProfile);
-                    mediaRecorder.setOutputFile(Environment.getExternalStorageDirectory() + "/"+videoName+".mp4");
-//                    mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.DEFAULT);
-//                    mediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.DEFAULT);
-                    mediaRecorder.setMaxFileSize(50000000);
-                    try {
-                        mediaRecorder.prepare();
-                        mediaRecorder.start();
-                    } catch (IOException e) {
-                        Log.e("media_recorder_start:",e.getMessage());
-                    }
-                } catch (Exception e){
-                    Log.e("media_recorder_prblm: ",e.getMessage());
-                }
-            } catch (Exception ex) {
-                Log.e("unlock_fail: ", ex.getMessage());
-            }
-        }else{
-            if(mediaRecorder!=null) {
-                mediaRecorder.reset(); // clear recorder configuration
-                mediaRecorder.release(); // release the recorder object
-                cameraPreview.camera.lock(); // lock camera for later use
-                Toast.makeText(this, "stopped recording", Toast.LENGTH_SHORT).show();
-            }
-        }
-    }
-    /*Below function has taken from: http://stackoverflow.com/questions/9325861/converting-yuv-rgbimage-processing-yuv-during-onpreviewframe-in-android
-    * It's been used for converting the format of picture data type returned from onPreviewFrame.*/
-    // decode Y, U, and V values on the YUV 420 buffer described as YCbCr_422_SP by Android
-    // David Manpearl 081201
-    public void decodeYUV(int[] out, byte[] fg, int width, int height)
-            throws NullPointerException, IllegalArgumentException {
-        int sz = width * height;
-        if (out == null)
-            throw new NullPointerException("buffer out is null");
-        if (out.length < sz)
-            throw new IllegalArgumentException("buffer out size " + out.length
-                    + " < minimum " + sz);
-        if (fg == null)
-            throw new NullPointerException("buffer 'fg' is null");
-        if (fg.length < sz)
-            throw new IllegalArgumentException("buffer fg size " + fg.length
-                    + " < minimum " + sz * 3 / 2);
-        int i, j;
-        int Y, Cr = 0, Cb = 0;
-        for (j = 0; j < height; j++) {
-            int pixPtr = j * width;
-            final int jDiv2 = j >> 1;
-            for (i = 0; i < width; i++) {
-                Y = fg[pixPtr];
-                if (Y < 0)
-                    Y += 255;
-                if ((i & 0x1) != 1) {
-                    final int cOff = sz + jDiv2 * width + (i >> 1) * 2;
-                    Cb = fg[cOff];
-                    if (Cb < 0)
-                        Cb += 127;
-                    else
-                        Cb -= 128;
-                    Cr = fg[cOff + 1];
-                    if (Cr < 0)
-                        Cr += 127;
-                    else
-                        Cr -= 128;
-                }
-                int R = Y + Cr + (Cr >> 2) + (Cr >> 3) + (Cr >> 5);
-                if (R < 0)
-                    R = 0;
-                else if (R > 255)
-                    R = 255;
-                int G = Y - (Cb >> 2) + (Cb >> 4) + (Cb >> 5) - (Cr >> 1)
-                        + (Cr >> 3) + (Cr >> 4) + (Cr >> 5);
-                if (G < 0)
-                    G = 0;
-                else if (G > 255)
-                    G = 255;
-                int B = Y + Cb + (Cb >> 1) + (Cb >> 2) + (Cb >> 6);
-                if (B < 0)
-                    B = 0;
-                else if (B > 255)
-                    B = 255;
-                out[pixPtr++] = 0xff000000 + (B << 16) + (G << 8) + R;
-            }
-        }
-
-    }
 
     @Override
     protected void onPause() {
