@@ -21,6 +21,10 @@ import android.widget.Toast;
 import com.urun.camera_test.CameraAccess.CameraPreview;
 import com.urun.camera_test.R;
 
+import org.jcodec.api.SequenceEncoder;
+import org.jcodec.common.model.ColorSpace;
+import org.jcodec.common.model.Picture;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -37,6 +41,10 @@ public class MainActivity extends Activity{
     Button capture_video;
     int pictureNumber=0;
     boolean captureFlag;
+    private SequenceEncoder sequenceEncoder = new SequenceEncoder(new File(Environment.getExternalStorageDirectory(),"/combinedvideo.mp4"));
+
+    public MainActivity() throws IOException {
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,37 +84,31 @@ public class MainActivity extends Activity{
         /* Setting onClick function for capture_video button*/
         capture_video = (Button)findViewById(R.id.capture_video);
         capture_video.setOnClickListener(new View.OnClickListener() {
-            MediaRecorder mediaRecorder_front = new MediaRecorder();
-            MediaRecorder mediaRecorder_back = new MediaRecorder();
             @Override
             public void onClick(View v) {
                 captureFlag = !captureFlag;
-                // Starting record for back camera
-                startRecording(cameraPreview_front,mediaRecorder_front,"back",0);
-                // Starting record for front camera
-                startRecording(cameraPreview_back,mediaRecorder_back,"front",1);
                 if(!captureFlag) {
                     // Setting UI recording messages to visible
                     recordBack.setVisibility(View.VISIBLE);
                     recordFront.setVisibility(View.VISIBLE);
 
-                    /*Taking frames from front camera while the preview is available*/
-                    getFrameFromPreview(cameraPreview_back,"front");
-                    /*Taking frames from front camera while the preview is available*/
-                    getFrameFromPreview(cameraPreview_front,"back");
+                    try {
+                        /*Taking frames from front camera while the preview is available*/
+                        getFrameFromPreview(cameraPreview_back,"front");
+                        /*Taking frames from front camera while the preview is available*/
+                        getFrameFromPreview(cameraPreview_front,"back");
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
 
                 }else{
                     recordBack.setVisibility(View.INVISIBLE);
                     recordFront.setVisibility(View.INVISIBLE);
                     /* Recording session has ended, initializing mediaRecorders for later usage*/
-                    mediaRecorder_front = new MediaRecorder();
-                    mediaRecorder_back = new MediaRecorder();
                     cameraPreview_back.camera.stopPreview();
                     cameraPreview_front.camera.stopPreview();
-                    Toast.makeText(MainActivity.this, "Media Recorded!", Toast.LENGTH_SHORT).show();
-                    MergeVideos workOnMerge = new MergeVideos(getApplicationContext());
                     try {
-                        workOnMerge.AllStepsAtOnce(Environment.getExternalStorageDirectory()+"/back.mp4",Environment.getExternalStorageDirectory()+"/front.mp4");
+                        sequenceEncoder.finish();
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -116,7 +118,7 @@ public class MainActivity extends Activity{
         });
     }
 
-    private void getFrameFromPreview(CameraPreview cameraPreview, final String savingName) {
+    private void getFrameFromPreview(CameraPreview cameraPreview, final String savingName) throws IOException {
         cameraPreview.camera.setPreviewCallback(new Camera.PreviewCallback() {
             long pictureNumber = 0;/*pictureNumber is keeping the frame number and we're using this value while we're saving the frame to the device.*/
             long timeMillisForReference = System.nanoTime()/100;
@@ -127,18 +129,40 @@ public class MainActivity extends Activity{
             @Override
             public void onPreviewFrame(byte[] data, Camera camera) {
                 long timeMillisForCapture = System.nanoTime()/100;
-                if(timeMillisForReference + 40000*timeDifferenceCoefficient <= timeMillisForCapture  ) {
+                if(timeMillisForReference + 40*timeDifferenceCoefficient <= timeMillisForCapture  ) {
                     int[] argb8888 = new int[320 * 240];/*the reason for setting this arrays size to 320*240 is that we have to set the array according to preview width and height.*/
                     decodeYUV(argb8888, data, 320, 240);
                     Bitmap bitmap = Bitmap.createBitmap(argb8888, 320, 240, Bitmap.Config.ARGB_8888);
-                    File currFrame = new File(Environment.getExternalStorageDirectory() + "/"+savingName + Long.toString(pictureNumber) + ".jpg");
+                    File currFrame = new File(Environment.getExternalStorageDirectory() + "/"+Long.toString(pictureNumber)+savingName  + ".jpg");
                     FileOutputStream fileOutputStream = null;
                     try {
                         fileOutputStream = new FileOutputStream(currFrame);
                         bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fileOutputStream);
                         fileOutputStream.flush();
                         fileOutputStream.close();
-                        pictureNumber++;/*increasing pictureNumber to save the next frame with its index.*/
+                        if(pictureNumber>0) {
+                            try {
+                                Bitmap bitmapBack = BitmapFactory.decodeFile(Environment.getExternalStorageDirectory() + "/" + pictureNumber + "back.jpg");
+                                Bitmap bitmapFront = BitmapFactory.decodeFile(Environment.getExternalStorageDirectory() + "/" + pictureNumber + "front.jpg");
+                                if (bitmapBack != null && bitmapFront != null) {
+                                    Bitmap bitmapResult = Bitmap.createBitmap(bitmapBack.getWidth(), bitmapBack.getHeight() * 2, Bitmap.Config.ARGB_8888);
+                                    Canvas canvas = new Canvas(bitmapResult);
+                                    Paint paint = new Paint();
+                                    canvas.drawBitmap(bitmapBack, 0, 0, paint);
+                                    canvas.drawBitmap(bitmapFront, 0, bitmapBack.getHeight(), paint);
+                                    FileOutputStream outputStream = new FileOutputStream(String.format(Environment.getExternalStorageDirectory() + "/%dcombined.jpg", pictureNumber));
+                                    bitmapResult.compress(Bitmap.CompressFormat.JPEG, 100, outputStream);
+                                    outputStream.close();
+                                    Picture combinedPicture = fromBitmap(bitmapResult);
+                                    sequenceEncoder.encodeNativeFrame(combinedPicture);
+                                    Log.e("picture_saved", "Picture has been saved succesfully: " + System.currentTimeMillis());
+                                    pictureNumber++;
+                                }
+                            } catch (Exception e) {
+                                Log.e("no_merge:", e.getMessage());
+                            }
+                        }
+                        else{pictureNumber++;}
                         timeMillisForReference = timeMillisForCapture;
                         timeDifferenceCoefficient++;/*Increasing the coefficient to set the time difference between  next frame and first frame correctly.*/
                     } catch (IOException e) {
@@ -148,6 +172,22 @@ public class MainActivity extends Activity{
 
             }
         });
+    }
+
+    public void MergeFrames() throws IOException {
+            File root = Environment.getExternalStorageDirectory();
+            Bitmap bitmapBack = BitmapFactory.decodeFile(root + "/" + pictureNumber + "back.jpg");
+            Bitmap bitmapFront = BitmapFactory.decodeFile(root + "/" + pictureNumber + "front.jpg");
+            Bitmap bitmapResult = Bitmap.createBitmap(bitmapBack.getWidth(), bitmapBack.getHeight() * 2, Bitmap.Config.ARGB_8888);
+            Canvas canvas = new Canvas(bitmapResult);
+            Paint paint = new Paint();
+            canvas.drawBitmap(bitmapBack, 0, 0, paint);
+            canvas.drawBitmap(bitmapFront, 0, bitmapBack.getHeight(), paint);
+            FileOutputStream outputStream = new FileOutputStream(String.format(root + "/%dcombined.jpg", pictureNumber));
+            bitmapResult.compress(Bitmap.CompressFormat.JPEG, 100, outputStream);
+            outputStream.close();
+            Log.e("picture_saved", "Picture has been saved succesfully: " + System.currentTimeMillis());
+            pictureNumber++;
     }
 
     private void takePic(CameraPreview cameraPreview_front) {
@@ -294,6 +334,30 @@ public class MainActivity extends Activity{
             }
         }
 
+    }
+
+    /* The conversion methods below taken from: http://stackoverflow.com/q/34672157*/
+    // convert from Bitmap to Picture (jcodec native structure)
+    public Picture fromBitmap(Bitmap src) {
+        Picture dst = Picture.create(src.getWidth(), src.getHeight(), ColorSpace.RGB);
+        fromBitmap(src, dst);
+        return dst;
+    }
+
+    public void fromBitmap(Bitmap src, Picture dst) {
+        int[] dstData = dst.getPlaneData(0);
+        int[] packed = new int[src.getWidth() * src.getHeight()];
+
+        src.getPixels(packed, 0, src.getWidth(), 0, 0, src.getWidth(), src.getHeight());
+
+        for (int i = 0, srcOff = 0, dstOff = 0; i < src.getHeight(); i++) {
+            for (int j = 0; j < src.getWidth(); j++, srcOff++, dstOff += 3) {
+                int rgb = packed[srcOff];
+                dstData[dstOff] = (rgb >> 16) & 0xff;
+                dstData[dstOff + 1] = (rgb >> 8) & 0xff;
+                dstData[dstOff + 2] = rgb & 0xff;
+            }
+        }
     }
 
     @Override
