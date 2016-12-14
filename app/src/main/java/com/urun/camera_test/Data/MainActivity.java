@@ -42,7 +42,10 @@ public class MainActivity extends Activity{
     Button capture_video;
     int pictureNumber=0;
     boolean captureFlag;
+    boolean finishedEncodingFlag;
     final Object key = new Object();
+    final Object key2 = new Object();
+    SequenceEncoder sequenceEncoder = new SequenceEncoder(new File(Environment.getExternalStorageDirectory(),"/combinedvideo.mp4"));
 
     Queue backFrames = new Queue();
     Queue frontFrames = new Queue();
@@ -101,18 +104,6 @@ public class MainActivity extends Activity{
                         getFrameFromPreview(cameraPreview_back, "front");
                     /*Taking frames from front camera while the preview is available*/
                         getFrameFromPreview(cameraPreview_front, "back");
-                        Runnable rEncode = new Runnable() {
-                            @Override
-                            public void run() {
-                                try {
-                                    getFramesAndEncode();
-                                } catch (IOException e) {
-                                    e.printStackTrace();
-                                }
-                            }
-                        };
-                        Thread tEncode = new Thread(rEncode);
-                        tEncode.start();
 
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -121,9 +112,16 @@ public class MainActivity extends Activity{
                 } else {
                     recordBack.setVisibility(View.INVISIBLE);
                     recordFront.setVisibility(View.INVISIBLE);
-                /* Recording session has ended, initializing mediaRecorders for later usage*/
+                    /* Recording session has ended, initializing mediaRecorders for later usage*/
                     cameraPreview_back.camera.stopPreview();
                     cameraPreview_front.camera.stopPreview();
+                    try {
+                        finishedEncodingFlag = true;
+                        Thread.sleep(1000);
+                        sequenceEncoder.finish();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                 }
             }
 
@@ -136,29 +134,43 @@ public class MainActivity extends Activity{
             public void onPreviewFrame(byte[] data, Camera camera) {
                 int[] argb8888 = new int[320 * 240];/*the reason for setting this arrays size to 320*240 is that we have to set the array according to preview width and height.*/
                 decodeYUV(argb8888, data, 320, 240);
-                Bitmap bitmap = Bitmap.createBitmap(argb8888, 320, 240, Bitmap.Config.ARGB_8888);
-                File currFrame = new File(Environment.getExternalStorageDirectory() + "/"+Long.toString(pictureNumber)+savingName+ ".jpg");
-                FileOutputStream fileOutputStream = null;
                 if (Objects.equals(savingName, "back")) {
-                    try {
-                        fileOutputStream = new FileOutputStream(currFrame);
-                        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fileOutputStream);
-                        fileOutputStream.flush();
-                        fileOutputStream.close();
-                        Log.e("Frame_taken: ",""+pictureNumber);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
+                    backFrames.add(Bitmap.createBitmap(argb8888, 320, 240, Bitmap.Config.ARGB_8888));
                 } else {
-                    try {
-                        fileOutputStream = new FileOutputStream(currFrame);
-                        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fileOutputStream);
-                        fileOutputStream.flush();
-                        fileOutputStream.close();
-                        Log.e("Frame_taken: ",""+pictureNumber);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
+                    frontFrames.add(Bitmap.createBitmap(argb8888, 320, 240, Bitmap.Config.ARGB_8888));
+                }
+                Log.e("created picture: ",""+pictureNumber);
+                pictureNumber++;
+                if(!frontFrames.isEmpty() && !backFrames.isEmpty() && !finishedEncodingFlag) {
+                    Runnable rEncode = new Runnable() {
+                        @Override
+                        public void run() {
+                            Bitmap bitmapBack;
+                            Bitmap bitmapFront;
+                            synchronized (key) {
+                                bitmapBack = (Bitmap) frontFrames.poll();
+                                bitmapFront = (Bitmap) backFrames.poll();
+                            }
+                            if (bitmapBack != null && bitmapFront != null) {
+                                Bitmap bitmapResult = Bitmap.createBitmap(bitmapBack.getWidth(), bitmapBack.getHeight() * 2, Bitmap.Config.ARGB_8888);
+                                Canvas canvas = new Canvas(bitmapResult);
+                                Paint paint = new Paint();
+                                canvas.drawBitmap(bitmapBack, 0, 0, paint);
+                                canvas.drawBitmap(bitmapFront, 0, bitmapBack.getHeight(), paint);
+                                Picture combinedPicture = fromBitmap(bitmapResult);
+                                try {
+                                    sequenceEncoder.encodeNativeFrame(combinedPicture);
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+                                Log.e("picture_saved", "Picture has been saved succesfully: ");
+                            } else {
+                                Log.e("NO_SAVE!!!", "couldn't save ");
+                            }
+                        }
+                    };
+                    Thread tEncode = new Thread(rEncode);
+                    tEncode.start();
                 }
             }
         });
