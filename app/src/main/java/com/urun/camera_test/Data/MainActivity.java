@@ -43,7 +43,6 @@ public class MainActivity extends Activity{
     int pictureNumber=0;
     boolean captureFlag;
     final Object key = new Object();
-    private SequenceEncoder sequenceEncoder = new SequenceEncoder(new File(Environment.getExternalStorageDirectory(),"/combinedvideo.mp4"));
 
     Queue backFrames = new Queue();
     Queue frontFrames = new Queue();
@@ -88,32 +87,43 @@ public class MainActivity extends Activity{
         });
         /* Setting onClick function for capture_video button*/
         capture_video = (Button)findViewById(R.id.capture_video);
-        capture_video.setOnClickListener(v -> {
-            captureFlag = !captureFlag;
-            if(!captureFlag) {
-                // Setting UI recording messages to visible
-                recordBack.setVisibility(View.VISIBLE);
-                recordFront.setVisibility(View.VISIBLE);
+        capture_video.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                captureFlag = !captureFlag;
+                if (!captureFlag) {
+                    // Setting UI recording messages to visible
+                    recordBack.setVisibility(View.VISIBLE);
+                    recordFront.setVisibility(View.VISIBLE);
 
-                try {
+                    try {
                     /*Taking frames from front camera while the preview is available*/
-                    getFrameFromPreview(cameraPreview_back,"front");
+                        getFrameFromPreview(cameraPreview_back, "front");
                     /*Taking frames from front camera while the preview is available*/
-                    getFrameFromPreview(cameraPreview_front,"back");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                        getFrameFromPreview(cameraPreview_front, "back");
+                        Runnable rEncode = new Runnable() {
+                            @Override
+                            public void run() {
+                                try {
+                                    getFramesAndEncode();
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        };
+                        Thread tEncode = new Thread(rEncode);
+                        tEncode.start();
 
-            }else{
-                recordBack.setVisibility(View.INVISIBLE);
-                recordFront.setVisibility(View.INVISIBLE);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+
+                } else {
+                    recordBack.setVisibility(View.INVISIBLE);
+                    recordFront.setVisibility(View.INVISIBLE);
                 /* Recording session has ended, initializing mediaRecorders for later usage*/
-                cameraPreview_back.camera.stopPreview();
-                cameraPreview_front.camera.stopPreview();
-                try {
-                    sequenceEncoder.finish();
-                } catch (IOException e) {
-                    e.printStackTrace();
+                    cameraPreview_back.camera.stopPreview();
+                    cameraPreview_front.camera.stopPreview();
                 }
             }
 
@@ -126,46 +136,56 @@ public class MainActivity extends Activity{
             public void onPreviewFrame(byte[] data, Camera camera) {
                 int[] argb8888 = new int[320 * 240];/*the reason for setting this arrays size to 320*240 is that we have to set the array according to preview width and height.*/
                 decodeYUV(argb8888, data, 320, 240);
+                Bitmap bitmap = Bitmap.createBitmap(argb8888, 320, 240, Bitmap.Config.ARGB_8888);
+                File currFrame = new File(Environment.getExternalStorageDirectory() + "/"+Long.toString(pictureNumber)+savingName+ ".jpg");
+                FileOutputStream fileOutputStream = null;
                 if (Objects.equals(savingName, "back")) {
-                    backFrames.add(Bitmap.createBitmap(argb8888, 320, 240, Bitmap.Config.ARGB_8888));
-                } else {
-                    frontFrames.add(Bitmap.createBitmap(argb8888, 320, 240, Bitmap.Config.ARGB_8888));
-                }
-                if (!backFrames.isEmpty()&&!frontFrames.isEmpty()) {
-                    Runnable rEncode = () -> getFramesAndEncode();
-                    Thread tEncode = new Thread(rEncode);
-                    tEncode.start();
                     try {
-                        tEncode.join();
-                    } catch (InterruptedException e) {
+                        fileOutputStream = new FileOutputStream(currFrame);
+                        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fileOutputStream);
+                        fileOutputStream.flush();
+                        fileOutputStream.close();
+                        Log.e("Frame_taken: ",""+pictureNumber);
+                    } catch (Exception e) {
                         e.printStackTrace();
                     }
                 } else {
-                    pictureNumber++;
+                    try {
+                        fileOutputStream = new FileOutputStream(currFrame);
+                        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fileOutputStream);
+                        fileOutputStream.flush();
+                        fileOutputStream.close();
+                        Log.e("Frame_taken: ",""+pictureNumber);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         });
     }
 
-    public void getFramesAndEncode() {
-        try {
-            Bitmap bitmapBack = (Bitmap) backFrames.poll();
-            Bitmap bitmapFront = (Bitmap) frontFrames.poll();
-            if (bitmapBack != null && bitmapFront != null) {
-                Bitmap bitmapResult = Bitmap.createBitmap(bitmapBack.getWidth(), bitmapBack.getHeight() * 2, Bitmap.Config.ARGB_8888);
-                Canvas canvas = new Canvas(bitmapResult);
-                Paint paint = new Paint();
-                canvas.drawBitmap(bitmapBack, 0, 0, paint);
-                canvas.drawBitmap(bitmapFront, 0, bitmapBack.getHeight(), paint);
-                Picture combinedPicture = fromBitmap(bitmapResult);
-                synchronized (key) {
+    public void getFramesAndEncode() throws IOException {
+        SequenceEncoder sequenceEncoder = new SequenceEncoder(new File(Environment.getExternalStorageDirectory(),"/combinedvideo.mp4"));
+        while (!captureFlag) {
+            try {
+                Bitmap bitmapBack = BitmapFactory.decodeFile(Environment.getExternalStorageDirectory() + "/" + pictureNumber + "back.jpg");
+                Bitmap bitmapFront = BitmapFactory.decodeFile(Environment.getExternalStorageDirectory() + "/" + pictureNumber + "front.jpg");
+                if (bitmapBack != null && bitmapFront != null) {
+                    Bitmap bitmapResult = Bitmap.createBitmap(bitmapBack.getWidth(), bitmapBack.getHeight() * 2, Bitmap.Config.ARGB_8888);
+                    Canvas canvas = new Canvas(bitmapResult);
+                    Paint paint = new Paint();
+                    canvas.drawBitmap(bitmapBack, 0, 0, paint);
+                    canvas.drawBitmap(bitmapFront, 0, bitmapBack.getHeight(), paint);
+                    Picture combinedPicture = fromBitmap(bitmapResult);
                     sequenceEncoder.encodeNativeFrame(combinedPicture);
+                    pictureNumber++;
+                    Log.e("picture_saved", "Picture has been saved succesfully: " + System.currentTimeMillis());
                 }
-                Log.e("picture_saved", "Picture has been saved succesfully: " + System.currentTimeMillis());
+            } catch (Exception e) {
+                Log.e("no_merge:", "frame_count: " + pictureNumber + e.getMessage());
             }
-        } catch (Exception e) {
-            Log.e("no_merge:", "frame_count: " + pictureNumber + e.getMessage());
         }
+        sequenceEncoder.finish();
     }
 
     public void MergeFrames() throws IOException {
