@@ -21,10 +21,14 @@ import android.widget.Toast;
 import com.urun.camera_test.CameraAccess.CameraPreview;
 import com.urun.camera_test.R;
 
-import org.jcodec.api.SequenceEncoder;
+import org.jcodec.api.SequenceEncoder8Bit;
+import org.jcodec.common.io.NIOUtils;
 import org.jcodec.common.model.ColorSpace;
 import org.jcodec.common.model.Picture;
+import org.jcodec.common.model.Picture8Bit;
+import org.jcodec.common.model.Rational;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -43,10 +47,7 @@ public class MainActivity extends Activity{
     int pictureNumber=0;
     boolean captureFlag;
     boolean finishedEncodingFlag;
-    final Object key = new Object();
-    final Object key2 = new Object();
-    SequenceEncoder sequenceEncoder = new SequenceEncoder(new File(Environment.getExternalStorageDirectory(),"/combinedvideo.mp4"));
-
+    AvcEncoder mAvEncoder = new AvcEncoder();
     Queue backFrames = new Queue();
     Queue frontFrames = new Queue();
 
@@ -117,8 +118,7 @@ public class MainActivity extends Activity{
                     cameraPreview_front.camera.stopPreview();
                     try {
                         finishedEncodingFlag = true;
-                        Thread.sleep(1000);
-                        sequenceEncoder.finish();
+                        mAvEncoder.close();
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -130,6 +130,7 @@ public class MainActivity extends Activity{
 
     private void getFrameFromPreview(CameraPreview cameraPreview, final String savingName) throws IOException {
         cameraPreview.camera.setPreviewCallback(new Camera.PreviewCallback() {
+            Bitmap bitmapBack,bitmapFront;
             @Override
             public void onPreviewFrame(byte[] data, Camera camera) {
                 int[] argb8888 = new int[320 * 240];/*the reason for setting this arrays size to 320*240 is that we have to set the array according to preview width and height.*/
@@ -139,45 +140,33 @@ public class MainActivity extends Activity{
                 } else {
                     frontFrames.add(Bitmap.createBitmap(argb8888, 320, 240, Bitmap.Config.ARGB_8888));
                 }
-                Log.e("created picture: ",""+pictureNumber);
+                Log.e("created picture: ", "" + pictureNumber);
                 pictureNumber++;
-                if(!frontFrames.isEmpty() && !backFrames.isEmpty() && !finishedEncodingFlag) {
-                    Runnable rEncode = new Runnable() {
-                        @Override
-                        public void run() {
-                            Bitmap bitmapBack;
-                            Bitmap bitmapFront;
-                            synchronized (key) {
-                                bitmapBack = (Bitmap) frontFrames.poll();
-                                bitmapFront = (Bitmap) backFrames.poll();
-                            }
-                            if (bitmapBack != null && bitmapFront != null) {
-                                Bitmap bitmapResult = Bitmap.createBitmap(bitmapBack.getWidth(), bitmapBack.getHeight() * 2, Bitmap.Config.ARGB_8888);
-                                Canvas canvas = new Canvas(bitmapResult);
-                                Paint paint = new Paint();
-                                canvas.drawBitmap(bitmapBack, 0, 0, paint);
-                                canvas.drawBitmap(bitmapFront, 0, bitmapBack.getHeight(), paint);
-                                Picture combinedPicture = fromBitmap(bitmapResult);
-                                try {
-                                    sequenceEncoder.encodeNativeFrame(combinedPicture);
-                                } catch (IOException e) {
-                                    e.printStackTrace();
-                                }
-                                Log.e("picture_saved", "Picture has been saved succesfully: ");
-                            } else {
-                                Log.e("NO_SAVE!!!", "couldn't save ");
-                            }
-                        }
-                    };
-                    Thread tEncode = new Thread(rEncode);
-                    tEncode.start();
+                if (!frontFrames.isEmpty() && !backFrames.isEmpty() && !finishedEncodingFlag) {
+                    bitmapBack = (Bitmap) frontFrames.poll();
+                    bitmapFront = (Bitmap) backFrames.poll();
                 }
+                if (bitmapBack != null && bitmapFront != null) {
+                    Bitmap bitmapResult = Bitmap.createBitmap(bitmapBack.getWidth(), bitmapBack.getHeight() * 2, Bitmap.Config.ARGB_8888);
+                    Canvas canvas = new Canvas(bitmapResult);
+                    Paint paint = new Paint();
+                    canvas.drawBitmap(bitmapBack, 0, 0, paint);
+                    canvas.drawBitmap(bitmapFront, 0, bitmapBack.getHeight(), paint);
+                    ByteArrayOutputStream stream = new ByteArrayOutputStream();
+                    bitmapResult.compress(Bitmap.CompressFormat.PNG, 100, stream);
+                    byte[] byteArray = stream.toByteArray();//the byte array version of merged pictures
+                    mAvEncoder.offerEncoder(byteArray);
+                    Log.e("Encoded_Succesfully", "Picture has been Encoded Succesfuly.");
+                } else {
+                    Log.e("pictures_check", "Pictures not ready.");
+                }
+
             }
         });
     }
 
     public void getFramesAndEncode() throws IOException {
-        SequenceEncoder sequenceEncoder = new SequenceEncoder(new File(Environment.getExternalStorageDirectory(),"/combinedvideo.mp4"));
+        SequenceEncoder8Bit sequenceEncoder8Bit = new SequenceEncoder8Bit(NIOUtils.writableChannel(new File(Environment.getExternalStorageDirectory(),"/combinedvideo.mp4")), Rational.R(10,1));
         while (!captureFlag) {
             try {
                 Bitmap bitmapBack = BitmapFactory.decodeFile(Environment.getExternalStorageDirectory() + "/" + pictureNumber + "back.jpg");
@@ -188,8 +177,9 @@ public class MainActivity extends Activity{
                     Paint paint = new Paint();
                     canvas.drawBitmap(bitmapBack, 0, 0, paint);
                     canvas.drawBitmap(bitmapFront, 0, bitmapBack.getHeight(), paint);
-                    Picture combinedPicture = fromBitmap(bitmapResult);
-                    sequenceEncoder.encodeNativeFrame(combinedPicture);
+                    Picture toConvert = fromBitmap(bitmapResult);
+                    Picture8Bit combinedPicture = Picture8Bit.fromPicture(toConvert);
+                    sequenceEncoder8Bit.encodeNativeFrame(combinedPicture);
                     pictureNumber++;
                     Log.e("picture_saved", "Picture has been saved succesfully: " + System.currentTimeMillis());
                 }
@@ -197,7 +187,7 @@ public class MainActivity extends Activity{
                 Log.e("no_merge:", "frame_count: " + pictureNumber + e.getMessage());
             }
         }
-        sequenceEncoder.finish();
+        sequenceEncoder8Bit.finish();
     }
 
     public void MergeFrames() throws IOException {
