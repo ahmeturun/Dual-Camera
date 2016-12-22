@@ -50,6 +50,7 @@ public class MainActivity extends Activity{
     AvcEncoder mAvEncoder = new AvcEncoder();
     Queue backFrames = new Queue();
     Queue frontFrames = new Queue();
+    final Object key = new Object();
 
     public MainActivity() throws IOException {
     }
@@ -58,6 +59,7 @@ public class MainActivity extends Activity{
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
         /*textview for recording message on the UI*/
         final TextView recordBack = (TextView)findViewById(R.id.recording_text_back);
         final TextView recordFront = (TextView)findViewById(R.id.recording_text_front);
@@ -155,7 +157,9 @@ public class MainActivity extends Activity{
                     ByteArrayOutputStream stream = new ByteArrayOutputStream();
                     bitmapResult.compress(Bitmap.CompressFormat.PNG, 100, stream);
                     byte[] byteArray = stream.toByteArray();//the byte array version of merged pictures
-                    mAvEncoder.offerEncoder(byteArray);
+                    synchronized (key) {
+                        mAvEncoder.offerEncoder(byteArray);
+                    }
                     Log.e("Encoded_Succesfully", "Picture has been Encoded Succesfuly.");
                 } else {
                     Log.e("pictures_check", "Pictures not ready.");

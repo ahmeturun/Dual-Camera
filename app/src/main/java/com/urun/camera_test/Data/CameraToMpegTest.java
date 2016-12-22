@@ -349,11 +349,7 @@ public class CameraToMpegTest {
         // you will likely want to defer instantiation of CodecInputSurface until after the
         // "display" EGL context is created, then modify the eglCreateContext call to
         // take eglGetCurrentContext() as the share_context argument.
-        try {
-            mEncoder = MediaCodec.createEncoderByType(MIME_TYPE);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        mEncoder = MediaCodec.createEncoderByType(MIME_TYPE);
         mEncoder.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
         mInputSurface = new CodecInputSurface(mEncoder.createInputSurface());
         mEncoder.start();

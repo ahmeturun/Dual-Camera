@@ -1,8 +1,8 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 24
-    buildToolsVersion "24.0.2"
+    compileSdkVersion 19
+    buildToolsVersion '19.1.0'
     defaultConfig {
         applicationId "com.urun.camera_test"
         minSdkVersion 19

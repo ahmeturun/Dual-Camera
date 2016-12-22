@@ -29,11 +29,7 @@ class AvcEncoder {
             e.printStackTrace();
         }
 
-        try {
-            mediaCodec = MediaCodec.createEncoderByType("video/avc");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        mediaCodec = MediaCodec.createEncoderByType("video/avc");
         MediaFormat mediaFormat = MediaFormat.createVideoFormat("video/avc", 320, 240);
         mediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, 125000);
         mediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, 25);

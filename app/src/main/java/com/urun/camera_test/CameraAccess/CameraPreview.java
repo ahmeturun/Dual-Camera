@@ -1,10 +1,7 @@
 package com.urun.camera_test.CameraAccess;
 
 import android.content.Context;
-import android.graphics.ImageFormat;
 import android.hardware.Camera;
-import android.hardware.camera2.CameraDevice;
-import android.os.Environment;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -13,7 +10,6 @@ import android.widget.Toast;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 
 /**
  * Created by ahmet on 10/5/2016.
