@@ -29,12 +29,16 @@ class AvcEncoder {
             e.printStackTrace();
         }
 
-        mediaCodec = MediaCodec.createEncoderByType("video/avc");
-        MediaFormat mediaFormat = MediaFormat.createVideoFormat("video/avc", 320, 240);
-        mediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, 125000);
-        mediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, 25);
+        try {
+            mediaCodec = MediaCodec.createEncoderByType("video/avc");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        MediaFormat mediaFormat = MediaFormat.createVideoFormat("video/avc", 1280, 720);
+        mediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, 8000000);
+        mediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, 30);
         mediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Planar);
-        mediaFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 8);
+        mediaFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 5);
         mediaCodec.configure(mediaFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE);
         mediaCodec.start();
     }
@@ -76,6 +80,7 @@ class AvcEncoder {
                 outputBufferIndex = mediaCodec.dequeueOutputBuffer(bufferInfo, 0);
 
             }
+            Log.e("from_AvEncoder: ","frame encoded succesfully.");
         } catch (Throwable t) {
             t.printStackTrace();
         }

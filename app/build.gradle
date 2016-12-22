@@ -1,12 +1,12 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 19
-    buildToolsVersion '19.1.0'
+    compileSdkVersion 22
+    buildToolsVersion '24.0.2'
     defaultConfig {
         applicationId "com.urun.camera_test"
-        minSdkVersion 19
-        targetSdkVersion 19
+        minSdkVersion 22
+        targetSdkVersion 22
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
@@ -28,8 +28,8 @@ android {
         }
     }
     compileOptions {
-        targetCompatibility 1.7
-        sourceCompatibility 1.7
+        targetCompatibility JavaVersion.VERSION_1_7
+        sourceCompatibility JavaVersion.VERSION_1_7
     }
 }
 

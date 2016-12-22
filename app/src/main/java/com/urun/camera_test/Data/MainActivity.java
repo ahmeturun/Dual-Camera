@@ -103,9 +103,9 @@ public class MainActivity extends Activity{
                     recordFront.setVisibility(View.VISIBLE);
 
                     try {
-                    /*Taking frames from front camera while the preview is available*/
-                        getFrameFromPreview(cameraPreview_back, "front");
-                    /*Taking frames from front camera while the preview is available*/
+                        /*Taking frames from front camera while the preview is available*/
+//                        getFrameFromPreview(cameraPreview_back, "front");
+                        /*Taking frames from front camera while the preview is available*/
                         getFrameFromPreview(cameraPreview_front, "back");
 
                     } catch (IOException e) {
@@ -135,38 +135,54 @@ public class MainActivity extends Activity{
             Bitmap bitmapBack,bitmapFront;
             @Override
             public void onPreviewFrame(byte[] data, Camera camera) {
-                int[] argb8888 = new int[320 * 240];/*the reason for setting this arrays size to 320*240 is that we have to set the array according to preview width and height.*/
-                decodeYUV(argb8888, data, 320, 240);
-                if (Objects.equals(savingName, "back")) {
-                    backFrames.add(Bitmap.createBitmap(argb8888, 320, 240, Bitmap.Config.ARGB_8888));
-                } else {
-                    frontFrames.add(Bitmap.createBitmap(argb8888, 320, 240, Bitmap.Config.ARGB_8888));
-                }
-                Log.e("created picture: ", "" + pictureNumber);
-                pictureNumber++;
-                if (!frontFrames.isEmpty() && !backFrames.isEmpty() && !finishedEncodingFlag) {
-                    bitmapBack = (Bitmap) frontFrames.poll();
-                    bitmapFront = (Bitmap) backFrames.poll();
-                }
-                if (bitmapBack != null && bitmapFront != null) {
-                    Bitmap bitmapResult = Bitmap.createBitmap(bitmapBack.getWidth(), bitmapBack.getHeight() * 2, Bitmap.Config.ARGB_8888);
-                    Canvas canvas = new Canvas(bitmapResult);
-                    Paint paint = new Paint();
-                    canvas.drawBitmap(bitmapBack, 0, 0, paint);
-                    canvas.drawBitmap(bitmapFront, 0, bitmapBack.getHeight(), paint);
-                    ByteArrayOutputStream stream = new ByteArrayOutputStream();
-                    bitmapResult.compress(Bitmap.CompressFormat.PNG, 100, stream);
-                    byte[] byteArray = stream.toByteArray();//the byte array version of merged pictures
-                    synchronized (key) {
-                        mAvEncoder.offerEncoder(byteArray);
-                    }
-                    Log.e("Encoded_Succesfully", "Picture has been Encoded Succesfuly.");
-                } else {
-                    Log.e("pictures_check", "Pictures not ready.");
-                }
+                mAvEncoder.offerEncoder(data);
+//                int[] argb8888 = new int[320 * 240];/*the reason for setting this arrays size to 320*240 is that we have to set the array according to preview width and height.*/
+//                decodeYUV(argb8888, data, 320, 240);
+//                if (Objects.equals(savingName, "back")) {
+//                    backFrames.add(Bitmap.createBitmap(argb8888, 320, 240, Bitmap.Config.ARGB_8888));
+//                } else {
+//                    frontFrames.add(Bitmap.createBitmap(argb8888, 320, 240, Bitmap.Config.ARGB_8888));
+//                }
+//                Log.e("created picture: ", "" + pictureNumber);
+//                pictureNumber++;
+//                if (!frontFrames.isEmpty() && !backFrames.isEmpty() && !finishedEncodingFlag) {
+//                    bitmapBack = (Bitmap) frontFrames.poll();
+//                    bitmapFront = (Bitmap) backFrames.poll();
+//                }
+//                if (bitmapBack != null && bitmapFront != null) {
+//                    synchronized (key) {
+//                        Bitmap bitmapResult = Bitmap.createBitmap(bitmapBack.getWidth(), bitmapBack.getHeight() * 2, Bitmap.Config.ARGB_8888);
+//                        Canvas canvas = new Canvas(bitmapResult);
+//                        Paint paint = new Paint();
+//                        canvas.drawBitmap(bitmapBack, 0, 0, paint);
+//                        canvas.drawBitmap(bitmapFront, 0, bitmapBack.getHeight(), paint);
+//                        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+//                        bitmapResult.compress(Bitmap.CompressFormat.PNG, 100, stream);
+//                        byte[] byteArray = stream.toByteArray();//the byte array version of merged pictures
+//                        mAvEncoder.offerEncoder(data);
+//                        Log.e("Encoded_Succesfully", "Picture has been Encoded Succesfuly.");
+//                    }
+//                } else {
+//                    Log.e("pictures_check", "Pictures not ready.");
+//                }
 
             }
         });
+    }
+
+    public static byte[] YV12toYUV420Planar(byte[] input, byte[] output, int width, int height) {
+    /*
+     * COLOR_FormatYUV420Planar is I420 which is like YV12, but with U and V reversed.
+     * So we just have to reverse U and V.
+     */
+        final int frameSize = width * height;
+        final int qFrameSize = frameSize/4;
+
+        System.arraycopy(input, 0, output, 0, frameSize); // Y
+        System.arraycopy(input, frameSize, output, frameSize + qFrameSize, qFrameSize); // Cr (V)
+        System.arraycopy(input, frameSize + qFrameSize, output, frameSize, qFrameSize); // Cb (U)
+
+        return output;
     }
 
     public void getFramesAndEncode() throws IOException {
