@@ -155,7 +155,7 @@ public class MainActivity extends Activity{
                             Paint paint = new Paint();
                             canvas.drawBitmap(bitmapBack, 0, 0, paint);
                             canvas.drawBitmap(bitmapFront, 0, bitmapBack.getHeight(), paint);
-
+                            //last researching point: "get yuv420 color format from bitmap"
                             byte[] byteArray = getYV12(bitmapResult.getWidth(), bitmapResult.getHeight(), bitmapResult);//the byte array version of merged pictures
 
                             mAvEncoder.offerEncoder(byteArray);
