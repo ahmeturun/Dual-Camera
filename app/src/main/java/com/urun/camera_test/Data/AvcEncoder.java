@@ -34,7 +34,7 @@ class AvcEncoder {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        MediaFormat mediaFormat = MediaFormat.createVideoFormat("video/avc", 1280, 720);
+        MediaFormat mediaFormat = MediaFormat.createVideoFormat("video/avc", 320, 480);
         mediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, 8000000);
         mediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, 30);
         mediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Planar);
