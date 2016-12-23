@@ -136,34 +136,34 @@ public class MainActivity extends Activity{
             Bitmap bitmapBack,bitmapFront;
             @Override
             public void onPreviewFrame(byte[] data, Camera camera) {
-                int[] argb8888 = new int[320 * 240];/*the reason for setting this arrays size to 320*240 is that we have to set the array according to preview width and height.*/
-                decodeYUV(argb8888, data, 320, 240);
+                int[] argb8888 = new int[640 * 480];/*the reason for setting this arrays size to 320*240 is that we have to set the array according to preview width and height.*/
+                decodeYUV(argb8888, data, 640, 480);
                 if (Objects.equals(savingName, "back")) {
-                    backFrames.add(Bitmap.createBitmap(argb8888, 320, 240, Bitmap.Config.ARGB_8888));
+                    backFrames.add(Bitmap.createBitmap(argb8888, 640, 480, Bitmap.Config.ARGB_8888));
                 } else {
-                    frontFrames.add(Bitmap.createBitmap(argb8888, 320, 240, Bitmap.Config.ARGB_8888));
+                    frontFrames.add(Bitmap.createBitmap(argb8888, 640, 480, Bitmap.Config.ARGB_8888));
                 }
                 Log.e("created picture: ", "" + pictureNumber);
                 pictureNumber++;
                 if (!frontFrames.isEmpty() && !backFrames.isEmpty() && !finishedEncodingFlag) {
-                    bitmapBack = (Bitmap) frontFrames.poll();
-                    bitmapFront = (Bitmap) backFrames.poll();
-                }
-                if (bitmapBack != null && bitmapFront != null) {
                     synchronized (key) {
-                        Bitmap bitmapResult = Bitmap.createBitmap(320, 480, Bitmap.Config.ARGB_8888);
-                        Canvas canvas = new Canvas(bitmapResult);
-                        Paint paint = new Paint();
-                        canvas.drawBitmap(bitmapBack, 0, 0, paint);
-                        canvas.drawBitmap(bitmapFront, 0, bitmapBack.getHeight(), paint);
+                        bitmapBack = (Bitmap) frontFrames.poll();
+                        bitmapFront = (Bitmap) backFrames.poll();
+                        if (bitmapBack != null && bitmapFront != null) {
+                            Bitmap bitmapResult = Bitmap.createBitmap(640, 960, Bitmap.Config.ARGB_8888);
+                            Canvas canvas = new Canvas(bitmapResult);
+                            Paint paint = new Paint();
+                            canvas.drawBitmap(bitmapBack, 0, 0, paint);
+                            canvas.drawBitmap(bitmapFront, 0, bitmapBack.getHeight(), paint);
 
-                        byte[] byteArray = getNV21(bitmapResult.getWidth(),bitmapResult.getHeight(),bitmapResult);//the byte array version of merged pictures
-                        mAvEncoder.offerEncoder(byteArray);
-                        combinedFrameNumber++;
-                        Log.e("EncodeSuccesful_Frame: ", ""+combinedFrameNumber);
+                            byte[] byteArray = getNV21(bitmapResult.getWidth(), bitmapResult.getHeight(), bitmapResult);//the byte array version of merged pictures
+                            mAvEncoder.offerEncoder(byteArray);
+                            combinedFrameNumber++;
+                            Log.e("EncodeSuccesful_Frame: ", "" + combinedFrameNumber);
+                        } else {
+                            Log.e("pictures_check", "Pictures not ready.");
+                        }
                     }
-                } else {
-                    Log.e("pictures_check", "Pictures not ready.");
                 }
 
             }
@@ -172,50 +172,54 @@ public class MainActivity extends Activity{
 
     //below two functions used for converting bitmap file to NV21 taken from: http://stackoverflow.com/questions/5960247/convert-bitmap-array-to-yuv-ycbcr-nv21
     byte [] getNV21(int inputWidth, int inputHeight, Bitmap scaled) {
+        synchronized (key) {
 
-        int [] argb = new int[inputWidth * inputHeight];
+            int[] argb = new int[inputWidth * inputHeight];
 
-        scaled.getPixels(argb, 0, inputWidth, 0, 0, inputWidth, inputHeight);
+            scaled.getPixels(argb, 0, inputWidth, 0, 0, inputWidth, inputHeight);
 
-        byte [] yuv = new byte[inputWidth*inputHeight*3/2];
-        encodeYUV420SP(yuv, argb, inputWidth, inputHeight);
+            byte[] yuv = new byte[inputWidth * inputHeight * 3 / 2];
+            encodeYUV420SP(yuv, argb, inputWidth, inputHeight);
 
-        scaled.recycle();
+            scaled.recycle();
 
-        return yuv;
+            return yuv;
+        }
     }
 
     void encodeYUV420SP(byte[] yuv420sp, int[] argb, int width, int height) {
-        final int frameSize = width * height;
+        synchronized (key) {
+            final int frameSize = width * height;
 
-        int yIndex = 0;
-        int uvIndex = frameSize;
+            int yIndex = 0;
+            int uvIndex = frameSize;
 
-        int a, R, G, B, Y, U, V;
-        int index = 0;
-        for (int j = 0; j < height; j++) {
-            for (int i = 0; i < width; i++) {
+            int a, R, G, B, Y, U, V;
+            int index = 0;
+            for (int j = 0; j < height; j++) {
+                for (int i = 0; i < width; i++) {
 
-                a = (argb[index] & 0xff000000) >> 24; // a is not used obviously
-                R = (argb[index] & 0xff0000) >> 16;
-                G = (argb[index] & 0xff00) >> 8;
-                B = (argb[index] & 0xff) >> 0;
+                    a = (argb[index] & 0xff000000) >> 24; // a is not used obviously
+                    R = (argb[index] & 0xff0000) >> 16;
+                    G = (argb[index] & 0xff00) >> 8;
+                    B = (argb[index] & 0xff) >> 0;
 
-                // well known RGB to YUV algorithm
-                Y = ( (  66 * R + 129 * G +  25 * B + 128) >> 8) +  16;
-                U = ( ( -38 * R -  74 * G + 112 * B + 128) >> 8) + 128;
-                V = ( ( 112 * R -  94 * G -  18 * B + 128) >> 8) + 128;
+                    // well known RGB to YUV algorithm
+                    Y = ((66 * R + 129 * G + 25 * B + 128) >> 8) + 16;
+                    U = ((-38 * R - 74 * G + 112 * B + 128) >> 8) + 128;
+                    V = ((112 * R - 94 * G - 18 * B + 128) >> 8) + 128;
 
-                // NV21 has a plane of Y and interleaved planes of VU each sampled by a factor of 2
-                //    meaning for every 4 Y pixels there are 1 V and 1 U.  Note the sampling is every other
-                //    pixel AND every other scanline.
-                yuv420sp[yIndex++] = (byte) ((Y < 0) ? 0 : ((Y > 255) ? 255 : Y));
-                if (j % 2 == 0 && index % 2 == 0) {
-                    yuv420sp[uvIndex++] = (byte)((V<0) ? 0 : ((V > 255) ? 255 : V));
-                    yuv420sp[uvIndex++] = (byte)((U<0) ? 0 : ((U > 255) ? 255 : U));
+                    // NV21 has a plane of Y and interleaved planes of VU each sampled by a factor of 2
+                    //    meaning for every 4 Y pixels there are 1 V and 1 U.  Note the sampling is every other
+                    //    pixel AND every other scanline.
+                    yuv420sp[yIndex++] = (byte) ((Y < 0) ? 0 : ((Y > 255) ? 255 : Y));
+                    if (j % 2 == 0 && index % 2 == 0) {
+                        yuv420sp[uvIndex++] = (byte) ((V < 0) ? 0 : ((V > 255) ? 255 : V));
+                        yuv420sp[uvIndex++] = (byte) ((U < 0) ? 0 : ((U > 255) ? 255 : U));
+                    }
+
+                    index++;
                 }
-
-                index ++;
             }
         }
     }
