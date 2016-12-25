@@ -2,36 +2,20 @@ package com.urun.camera_test.Data;
 
 import android.app.Activity;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.hardware.Camera;
-import android.media.CamcorderProfile;
-import android.media.MediaRecorder;
 import android.os.Bundle;
-import android.os.Environment;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.urun.camera_test.CameraAccess.CameraPreview;
 import com.urun.camera_test.R;
 
-import org.jcodec.api.SequenceEncoder8Bit;
-import org.jcodec.common.io.NIOUtils;
-import org.jcodec.common.model.ColorSpace;
-import org.jcodec.common.model.Picture;
-import org.jcodec.common.model.Picture8Bit;
-import org.jcodec.common.model.Rational;
-
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.*;
 
@@ -42,7 +26,6 @@ public class MainActivity extends Activity{
     SurfaceView surfaceView_back,surfaceView_front;
     SurfaceHolder surfaceHolder_back,surfaceHolder_front;
     CameraPreview cameraPreview_back,cameraPreview_front;
-    Button capture_back, capture_front;
     Button capture_video;
     int pictureNumber=0;
     boolean captureFlag;
@@ -81,17 +64,8 @@ public class MainActivity extends Activity{
         surfaceHolder_back.addCallback(cameraPreview_back);
         surfaceHolder_back.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 
-        /* Setting onClick function for "capture" button*/
-        capture_front = (Button) findViewById(R.id.button_capture_back);
-        capture_front.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // Taking picture from front camera(name references are switched so front takes back camera parameters. Don't get confused.)
-                takePic(cameraPreview_front);
-                // Taking picture from back camera
-                takePic(cameraPreview_back);
-            }
-        });
+
+
         /* Setting onClick function for capture_video button*/
         capture_video = (Button)findViewById(R.id.capture_video);
         capture_video.setOnClickListener(new View.OnClickListener() {
@@ -155,7 +129,6 @@ public class MainActivity extends Activity{
                             Paint paint = new Paint();
                             canvas.drawBitmap(bitmapBack, 0, 0, paint);
                             canvas.drawBitmap(bitmapFront, 0, bitmapBack.getHeight(), paint);
-                            //last researching point: "get yuv420 color format from bitmap"
                             byte[] byteArray = getYV12(bitmapResult.getWidth(), bitmapResult.getHeight(), bitmapResult);//the byte array version of merged pictures
 
                             mAvEncoder.offerEncoder(byteArray);
@@ -170,62 +143,6 @@ public class MainActivity extends Activity{
             }
         });
     }
-
-    //below two functions used for converting bitmap file to NV21 taken from: http://stackoverflow.com/questions/5960247/convert-bitmap-array-to-yuv-ycbcr-nv21
-    //////////////////////////////////////////////////////////////////////////7
-    byte [] getNV21(int inputWidth, int inputHeight, Bitmap scaled) {
-        synchronized (key) {
-
-            int[] argb = new int[inputWidth * inputHeight];
-
-            scaled.getPixels(argb, 0, inputWidth, 0, 0, inputWidth, inputHeight);
-
-            byte[] yuv = new byte[inputWidth * inputHeight * 3 / 2];
-            encodeYUV420SP(yuv, argb, inputWidth, inputHeight);
-
-            scaled.recycle();
-
-            return yuv;
-        }
-    }
-
-    void encodeYUV420SP(byte[] yuv420sp, int[] argb, int width, int height) {
-        synchronized (key) {
-            final int frameSize = width * height;
-
-            int yIndex = 0;
-            int uvIndex = frameSize;
-
-            int a, R, G, B, Y, U, V;
-            int index = 0;
-            for (int j = 0; j < height; j++) {
-                for (int i = 0; i < width; i++) {
-
-                    a = (argb[index] & 0xff000000) >> 24; // a is not used obviously
-                    R = (argb[index] & 0xff0000) >> 16;
-                    G = (argb[index] & 0xff00) >> 8;
-                    B = (argb[index] & 0xff) >> 0;
-
-                    // well known RGB to YUV algorithm
-                    Y = ((66 * R + 129 * G + 25 * B + 128) >> 8) + 16;
-                    U = ((-38 * R - 74 * G + 112 * B + 128) >> 8) + 128;
-                    V = ((112 * R - 94 * G - 18 * B + 128) >> 8) + 128;
-
-                    // NV21 has a plane of Y and interleaved planes of VU each sampled by a factor of 2
-                    //    meaning for every 4 Y pixels there are 1 V and 1 U.  Note the sampling is every other
-                    //    pixel AND every other scanline.
-                    yuv420sp[yIndex++] = (byte) ((Y < 0) ? 0 : ((Y > 255) ? 255 : Y));
-                    if (j % 2 == 0 && index % 2 == 0) {
-                        yuv420sp[uvIndex++] = (byte) ((V < 0) ? 0 : ((V > 255) ? 255 : V));
-                        yuv420sp[uvIndex++] = (byte) ((U < 0) ? 0 : ((U > 255) ? 255 : U));
-                    }
-
-                    index++;
-                }
-            }
-        }
-    }
-    //////////////////////////////////////////////////////////////////
 
     //Below two functions also used in taking yuv colors from bitmap but this time getting the color yv12 format
     // https://gist.github.com/wobbals/5725412
@@ -281,148 +198,6 @@ public class MainActivity extends Activity{
         }
     }
 
-
-    public static byte[] YV12toYUV420Planar(byte[] input, byte[] output, int width, int height) {
-    /*
-     * COLOR_FormatYUV420Planar is I420 which is like YV12, but with U and V reversed.
-     * So we just have to reverse U and V.
-     */
-        final int frameSize = width * height;
-        final int qFrameSize = frameSize/4;
-
-        System.arraycopy(input, 0, output, 0, frameSize); // Y
-        System.arraycopy(input, frameSize, output, frameSize + qFrameSize, qFrameSize); // Cr (V)
-        System.arraycopy(input, frameSize + qFrameSize, output, frameSize, qFrameSize); // Cb (U)
-
-        return output;
-    }
-
-    public void getFramesAndEncode() throws IOException {
-        SequenceEncoder8Bit sequenceEncoder8Bit = new SequenceEncoder8Bit(NIOUtils.writableChannel(new File(Environment.getExternalStorageDirectory(),"/combinedvideo.mp4")), Rational.R(10,1));
-        while (!captureFlag) {
-            try {
-                Bitmap bitmapBack = BitmapFactory.decodeFile(Environment.getExternalStorageDirectory() + "/" + pictureNumber + "back.jpg");
-                Bitmap bitmapFront = BitmapFactory.decodeFile(Environment.getExternalStorageDirectory() + "/" + pictureNumber + "front.jpg");
-                if (bitmapBack != null && bitmapFront != null) {
-                    Bitmap bitmapResult = Bitmap.createBitmap(bitmapBack.getWidth(), bitmapBack.getHeight() * 2, Bitmap.Config.ARGB_8888);
-                    Canvas canvas = new Canvas(bitmapResult);
-                    Paint paint = new Paint();
-                    canvas.drawBitmap(bitmapBack, 0, 0, paint);
-                    canvas.drawBitmap(bitmapFront, 0, bitmapBack.getHeight(), paint);
-                    Picture toConvert = fromBitmap(bitmapResult);
-                    Picture8Bit combinedPicture = Picture8Bit.fromPicture(toConvert);
-                    sequenceEncoder8Bit.encodeNativeFrame(combinedPicture);
-                    pictureNumber++;
-                    Log.e("picture_saved", "Picture has been saved succesfully: " + System.currentTimeMillis());
-                }
-            } catch (Exception e) {
-                Log.e("no_merge:", "frame_count: " + pictureNumber + e.getMessage());
-            }
-        }
-        sequenceEncoder8Bit.finish();
-    }
-
-    public void MergeFrames() throws IOException {
-            File root = Environment.getExternalStorageDirectory();
-            Bitmap bitmapBack = BitmapFactory.decodeFile(root + "/" + pictureNumber + "back.jpg");
-            Bitmap bitmapFront = BitmapFactory.decodeFile(root + "/" + pictureNumber + "front.jpg");
-            Bitmap bitmapResult = Bitmap.createBitmap(bitmapBack.getWidth(), bitmapBack.getHeight() * 2, Bitmap.Config.ARGB_8888);
-            Canvas canvas = new Canvas(bitmapResult);
-            Paint paint = new Paint();
-            canvas.drawBitmap(bitmapBack, 0, 0, paint);
-            canvas.drawBitmap(bitmapFront, 0, bitmapBack.getHeight(), paint);
-            FileOutputStream outputStream = new FileOutputStream(String.format(root + "/%dcombined.jpg", pictureNumber));
-            bitmapResult.compress(Bitmap.CompressFormat.JPEG, 100, outputStream);
-            outputStream.close();
-            Log.e("picture_saved", "Picture has been saved succesfully: " + System.currentTimeMillis());
-            pictureNumber++;
-    }
-
-    private void takePic(CameraPreview cameraPreview_front) {
-        if(cameraPreview_front!=null) {
-            cameraPreview_front.camera.takePicture(null,null,new Camera.PictureCallback() {
-                @Override
-                public void onPictureTaken(byte[] data, Camera camera) {
-                    FileOutputStream outStream = null;
-                    ++pictureNumber;
-                    try {
-                        outStream = new FileOutputStream(String.format("/sdcard/%dfront.jpg", pictureNumber));
-                        outStream.write(data);
-                        outStream.close();
-                        Log.e("picture_saved", "Picture has been saved succesfully: " + pictureNumber);
-                        camera.release();
-                    } catch (FileNotFoundException e) {
-                        e.printStackTrace();
-                        Log.e("file_not_found: ","couldn't save the file "+e.getMessage());
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                        Log.e("IOexception: ","couldn't save the file "+e.getMessage());
-                    } finally {
-                    }
-                    Log.e("Log", "onPictureTaken - jpeg");
-                }
-            });
-            Toast.makeText(MainActivity.this, "Picture Has Been Taken", Toast.LENGTH_SHORT).show();
-        }else {
-            Toast.makeText(MainActivity.this, "Failed!!!", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    public void mergePicture() throws IOException {
-        File root = Environment.getExternalStorageDirectory();
-        Bitmap bitmapBack = BitmapFactory.decodeFile(root+"/"+pictureNumber+"back.jpg");
-        Bitmap bitmapFront = BitmapFactory.decodeFile(root+"/"+pictureNumber+"front.jpg");
-        Bitmap bitmapResult = Bitmap.createBitmap(bitmapBack.getWidth(), bitmapBack.getHeight() * 2,Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas(bitmapResult);
-        Paint paint = new Paint();
-        canvas.drawBitmap(bitmapBack, 0,0,paint);
-        canvas.drawBitmap(bitmapFront,0,bitmapBack.getHeight(),paint);
-        FileOutputStream outputStream = new FileOutputStream(String.format(root+"/%dcombined.jpg",pictureNumber));
-        bitmapResult.compress(Bitmap.CompressFormat.JPEG,100,outputStream);
-        outputStream.close();
-        Log.e("picture_saved", "Picture has been saved succesfully: " + System.currentTimeMillis());
-        Toast.makeText(this, "jpeg taken as bitmap.", Toast.LENGTH_SHORT).show();
-    }
-
-    public void startRecording(CameraPreview cameraPreview,MediaRecorder mediaRecorder, String videoName,int cameraId){
-        if(!captureFlag) {
-            try {
-                cameraPreview.camera.unlock();
-                try {
-                    mediaRecorder.setCamera(cameraPreview.camera);
-                    mediaRecorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
-                    mediaRecorder.setAudioSource(MediaRecorder.AudioSource.CAMCORDER);
-                    mediaRecorder.setOrientationHint(90);
-//                    mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
-                    CamcorderProfile camcorderProfile = CamcorderProfile.get(cameraId,CamcorderProfile.QUALITY_480P);
-//                    camcorderProfile.videoFrameHeight = 1920;
-//                    camcorderProfile.videoFrameWidth = 1080;
-                    mediaRecorder.setProfile(camcorderProfile);
-                    mediaRecorder.setOutputFile(Environment.getExternalStorageDirectory() + "/"+videoName+".mp4");
-//                    mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.DEFAULT);
-//                    mediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.DEFAULT);
-                    mediaRecorder.setMaxFileSize(50000000);
-                    try {
-                        mediaRecorder.prepare();
-                        mediaRecorder.start();
-                    } catch (IOException e) {
-                        Log.e("media_recorder_start:",e.getMessage());
-                    }
-                } catch (Exception e){
-                    Log.e("media_recorder_prblm: ",e.getMessage());
-                }
-            } catch (Exception ex) {
-                Log.e("unlock_fail: ", ex.getMessage());
-            }
-        }else{
-            if(mediaRecorder!=null) {
-                mediaRecorder.reset(); // clear recorder configuration
-                mediaRecorder.release(); // release the recorder object
-                cameraPreview.camera.lock(); // lock camera for later use
-                Toast.makeText(this, "stopped recording", Toast.LENGTH_SHORT).show();
-            }
-        }
-    }
     /*Below function has taken from: http://stackoverflow.com/questions/9325861/converting-yuv-rgbimage-processing-yuv-during-onpreviewframe-in-android
     * It's been used for converting the format of picture data type returned from onPreviewFrame.*/
     // decode Y, U, and V values on the YUV 420 buffer described as YCbCr_422_SP by Android
@@ -484,39 +259,6 @@ public class MainActivity extends Activity{
 
     }
 
-    /* The conversion methods below taken from: http://stackoverflow.com/q/34672157*/
-    // convert from Bitmap to Picture (jcodec native structure)
-    public Picture fromBitmap(Bitmap src) {
-        Picture dst = Picture.create(src.getWidth(), src.getHeight(), ColorSpace.RGB);
-        fromBitmap(src, dst);
-        return dst;
-    }
-
-    public void fromBitmap(Bitmap src, Picture dst) {
-        int[] dstData = dst.getPlaneData(0);
-        int[] packed = new int[src.getWidth() * src.getHeight()];
-
-        src.getPixels(packed, 0, src.getWidth(), 0, 0, src.getWidth(), src.getHeight());
-
-        for (int i = 0, srcOff = 0, dstOff = 0; i < src.getHeight(); i++) {
-            for (int j = 0; j < src.getWidth(); j++, srcOff++, dstOff += 3) {
-                int rgb = packed[srcOff];
-                dstData[dstOff] = (rgb >> 16) & 0xff;
-                dstData[dstOff + 1] = (rgb >> 8) & 0xff;
-                dstData[dstOff + 2] = rgb & 0xff;
-            }
-        }
-    }
-    public byte[] swapYV12toI420(byte[] yv12bytes, int width, int height) {
-        byte[] i420bytes = new byte[yv12bytes.length];
-        for (int i = 0; i < width*height; i++)
-            i420bytes[i] = yv12bytes[i];
-        for (int i = width*height; i < width*height + (width/2*height/2); i++)
-            i420bytes[i] = yv12bytes[i + (width/2*height/2)];
-        for (int i = width*height + (width/2*height/2); i < width*height + 2*(width/2*height/2); i++)
-            i420bytes[i] = yv12bytes[i - (width/2*height/2)];
-        return i420bytes;
-    }
 
     @Override
     protected void onPause() {
