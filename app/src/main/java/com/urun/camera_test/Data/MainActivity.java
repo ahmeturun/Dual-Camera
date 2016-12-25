@@ -243,12 +243,13 @@ public class MainActivity extends Activity{
 
         return yuv;
     }
-
+    //I managed to solve the color issue by changing the u and v chrominance values in the function
+    //the format  that is sent from camera is different from yuv480sp so swapping this value worked.
     private void encodeYV12(byte[] yuv420sp, int[] argb, int width, int height) {
-        final int frameSize = width * height;
+        final int frameSize = (width * height);
 
         int yIndex = 0;
-        int uIndex = frameSize;
+        int uIndex = frameSize  ;
         int vIndex = frameSize + (frameSize / 4);
 
         int a, R, G, B, Y, U, V;
@@ -263,8 +264,8 @@ public class MainActivity extends Activity{
 
                 // well known RGB to YUV algorithm
                 Y = ( (  66 * R + 129 * G +  25 * B + 128) >> 8) +  16;
-                U = ( ( -38 * R -  74 * G + 112 * B + 128) >> 8) + 128;
-                V = ( ( 112 * R -  94 * G -  18 * B + 128) >> 8) + 128;
+                V = ( ( -38 * R -  74 * G + 112 * B + 128) >> 8) + 128;
+                U = ( ( 112 * R -  94 * G -  18 * B + 128) >> 8) + 128;
 
                 // YV12 has a plane of Y and two chroma plans (U, V) planes each sampled by a factor of 2
                 //    meaning for every 4 Y pixels there are 1 V and 1 U.  Note the sampling is every other
