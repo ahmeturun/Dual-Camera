@@ -5,7 +5,7 @@ android {
     buildToolsVersion '24.0.2'
     defaultConfig {
         applicationId "com.urun.camera_test"
-        minSdkVersion 22
+        minSdkVersion 17
         targetSdkVersion 22
         versionCode 1
         versionName "1.0"
@@ -20,7 +20,6 @@ android {
             dirs 'libs'
         }
     }
-
     buildTypes {
         release {
             minifyEnabled false
@@ -31,6 +30,8 @@ android {
         targetCompatibility JavaVersion.VERSION_1_7
         sourceCompatibility JavaVersion.VERSION_1_7
     }
+    productFlavors {
+    }
 }
 
 dependencies {
@@ -39,4 +40,5 @@ dependencies {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
     testCompile 'junit:junit:4.12'
+    compile project(':mp4parser')
 }

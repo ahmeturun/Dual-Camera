@@ -7,17 +7,35 @@ The following files were *not* copied into the new Gradle project; you
 should evaluate whether these are still needed in your project and if
 so manually move them:
 
-* default.properties
-* pom.xml
+* .gitignore
+* .idea\
+* .idea\compiler.xml
+* .idea\copyright\
+* .idea\copyright\profiles_settings.xml
+* .idea\encodings.xml
+* .idea\misc.xml
+* .idea\modules.xml
+* .idea\mp4parser-android-library.iml
+* .idea\vcs.xml
+* .idea\workspace.xml
+* LICENSE.txt
+* NOTICE.txt
+* README.md
+* proguard-project.txt
 
 Moved Files:
 ------------
 Android Gradle projects use a different directory structure than ADT
 Eclipse projects. Here's how the projects were restructured:
 
-* AndroidManifest.xml => androidtest\src\main\AndroidManifest.xml
-* res\ => androidtest\src\main\res\
-* src\ => androidtest\src\main\java\
+* AndroidManifest.xml => mp4parser\src\main\AndroidManifest.xml
+* assets\ => mp4parser\src\main\assets
+* res\ => mp4parser\src\main\res\
+* src\ => mp4parser\src\main\java\
+* src\com\coremedia\iso\boxes\odf-boxes.zip => mp4parser\src\main\resources\com\coremedia\iso\boxes\odf-boxes.zip
+* src\com\coremedia\iso\boxes\rtp-boxes.zip => mp4parser\src\main\resources\com\coremedia\iso\boxes\rtp-boxes.zip
+* src\com\googlecode\mp4parser\boxes\mp4-boxes.zip => mp4parser\src\main\resources\com\googlecode\mp4parser\boxes\mp4-boxes.zip
+* src\com\googlecode\mp4parser\boxes\mp4\objectdescriptors\ObjectDescriptor.java_bak => mp4parser\src\main\resources\com\googlecode\mp4parser\boxes\mp4\objectdescriptors\ObjectDescriptor.java_bak
 
 Next Steps:
 -----------

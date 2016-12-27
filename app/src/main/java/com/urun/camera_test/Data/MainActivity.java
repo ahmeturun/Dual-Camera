@@ -6,6 +6,7 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.hardware.Camera;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -13,9 +14,17 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
+import com.coremedia.iso.IsoFile;
+import com.googlecode.mp4parser.authoring.Movie;
+import com.googlecode.mp4parser.authoring.builder.DefaultMp4Builder;
+import com.googlecode.mp4parser.authoring.tracks.H264TrackImpl;
 import com.urun.camera_test.CameraAccess.CameraPreview;
 import com.urun.camera_test.R;
 
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.*;
 
@@ -96,6 +105,14 @@ public class MainActivity extends Activity{
                     try {
                         finishedEncodingFlag = true;
                         mAvEncoder.close();
+                        H264TrackImpl h264Track = new H264TrackImpl( new BufferedInputStream( new FileInputStream( Environment.getExternalStorageDirectory()+ "/video_encoded.264") ));
+                        Movie m = new Movie();
+                        m.addTrack(h264Track);
+
+                        IsoFile out = new DefaultMp4Builder().build(m);
+                        FileOutputStream fos = new FileOutputStream(new File("h264_output.mp4"));
+                        out.getBox(fos.getChannel());
+                        fos.close();
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -112,7 +129,7 @@ public class MainActivity extends Activity{
             public void onPreviewFrame(byte[] data, Camera camera) {
                 int[] argb8888 = new int[640 * 480];/*the reason for setting this arrays size to 320*240 is that we have to set the array according to preview width and height.*/
                 decodeYUV(argb8888, data, 640, 480);
-                if (Objects.equals(savingName, "back")) {
+                if (savingName == "back") {
                     backFrames.add(Bitmap.createBitmap(argb8888, 640, 480, Bitmap.Config.ARGB_8888));
                 } else {
                     frontFrames.add(Bitmap.createBitmap(argb8888, 640, 480, Bitmap.Config.ARGB_8888));
