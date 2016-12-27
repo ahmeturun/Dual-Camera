@@ -1,6 +1,6 @@
 [
     {
-        "outputFile": "C:\\Users\\ahmet\\Documents\\Camera-Test\\mp4parser\\build\\intermediates\\incremental\\mergeDebugAndroidTestResources\\merged.dir\\values\\values.xml",
+        "outputFile": "/home/urun/Desktop/Camera-Test/C:\\Users\\ahmet\\Documents\\Camera-Test\\mp4parser\\build\\intermediates\\incremental\\mergeDebugAndroidTestResources\\merged.dir\\values\\values.xml",
         "map": [
             {
                 "to": {
@@ -11,7 +11,7 @@
                     "endOffset": 97
                 },
                 "from": {
-                    "file": "C:\\Users\\ahmet\\Documents\\Camera-Test\\mp4parser\\build\\intermediates\\bundles\\debug\\res\\values\\values.xml",
+                    "file": "/home/urun/Desktop/Camera-Test/C:\\Users\\ahmet\\Documents\\Camera-Test\\mp4parser\\build\\intermediates\\bundles\\debug\\res\\values\\values.xml",
                     "position": {
                         "startLine": 2,
                         "startColumn": 4,
@@ -30,7 +30,50 @@
                     "endOffset": 155
                 },
                 "from": {
-                    "file": "C:\\Users\\ahmet\\Documents\\Camera-Test\\mp4parser\\build\\intermediates\\bundles\\debug\\res\\values\\values.xml",
+                    "file": "/home/urun/Desktop/Camera-Test/C:\\Users\\ahmet\\Documents\\Camera-Test\\mp4parser\\build\\intermediates\\bundles\\debug\\res\\values\\values.xml",
+                    "position": {
+                        "startLine": 3,
+                        "startColumn": 4,
+                        "startOffset": 102,
+                        "endColumn": 57,
+                        "endOffset": 155
+                    }
+                }
+            }
+        ]
+    },
+    {
+        "outputFile": "/home/urun/Desktop/Camera-Test/mp4parser/build/intermediates/incremental/mergeDebugAndroidTestResources/merged.dir/values/values.xml",
+        "map": [
+            {
+                "to": {
+                    "startLine": 2,
+                    "startColumn": 4,
+                    "startOffset": 55,
+                    "endColumn": 46,
+                    "endOffset": 97
+                },
+                "from": {
+                    "file": "/home/urun/Desktop/Camera-Test/mp4parser/build/intermediates/bundles/debug/res/values/values.xml",
+                    "position": {
+                        "startLine": 2,
+                        "startColumn": 4,
+                        "startOffset": 55,
+                        "endColumn": 46,
+                        "endOffset": 97
+                    }
+                }
+            },
+            {
+                "to": {
+                    "startLine": 3,
+                    "startColumn": 4,
+                    "startOffset": 102,
+                    "endColumn": 57,
+                    "endOffset": 155
+                },
+                "from": {
+                    "file": "/home/urun/Desktop/Camera-Test/mp4parser/build/intermediates/bundles/debug/res/values/values.xml",
                     "position": {
                         "startLine": 3,
                         "startColumn": 4,

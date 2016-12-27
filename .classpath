@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="app/build/generated/source/buildConfig/androidTest/debug"/>
+	<classpathentry kind="src" path="app/build/generated/source/buildConfig/debug"/>
+	<classpathentry kind="src" path="app/build/generated/source/r/androidTest/debug"/>
+	<classpathentry kind="src" path="app/build/generated/source/r/debug"/>
+	<classpathentry kind="src" path="app/src/androidTest/java"/>
+	<classpathentry kind="src" path="app/src/main/java"/>
+	<classpathentry kind="src" path="app/src/test/java"/>
+	<classpathentry kind="src" path="mp4parser/build/generated/source/buildConfig/androidTest/debug"/>
+	<classpathentry kind="src" path="mp4parser/build/generated/source/buildConfig/debug"/>
+	<classpathentry kind="src" path="mp4parser/build/generated/source/buildConfig/release"/>
+	<classpathentry kind="src" path="mp4parser/build/generated/source/r/androidTest/debug"/>
+	<classpathentry kind="src" path="mp4parser/build/generated/source/r/debug"/>
+	<classpathentry kind="src" path="mp4parser/build/generated/source/r/release"/>
+	<classpathentry excluding="com/coremedia/iso/boxes/" kind="src" path="mp4parser/src/main/java"/>
+	<classpathentry kind="src" path="mp4parser/src/main/java/com/coremedia/iso/boxes"/>
+	<classpathentry kind="lib" path="app/build/intermediates/exploded-aar/Camera-Test/mp4parser/unspecified/jars/classes.jar"/>
+	<classpathentry kind="lib" path="app/build/intermediates/exploded-aar/com.android.support.test.espresso/espresso-core/2.2.2/jars/classes.jar"/>
+	<classpathentry kind="lib" path="app/build/intermediates/exploded-aar/com.android.support.test.espresso/espresso-idling-resource/2.2.2/jars/classes.jar"/>
+	<classpathentry kind="lib" path="app/build/intermediates/exploded-aar/com.android.support.test/exposed-instrumentation-api-publish/0.5/jars/classes.jar"/>
+	<classpathentry kind="lib" path="app/build/intermediates/exploded-aar/com.android.support.test/rules/0.5/jars/classes.jar"/>
+	<classpathentry kind="lib" path="app/build/intermediates/exploded-aar/com.android.support.test/runner/0.5/jars/classes.jar"/>
+	<classpathentry kind="lib" path="app/build/intermediates/exploded-aar/com.android.support/support-v4/23.0.0/jars/classes.jar"/>
+	<classpathentry kind="lib" path="app/build/intermediates/exploded-aar/com.android.support/support-v4/23.0.0/jars/libs/internal_impl-23.0.0.jar"/>
+	<classpathentry kind="lib" path="app/build/intermediates/incremental-classes/debug/instant-run-bootstrap.jar"/>
+	<classpathentry kind="lib" path="app/build/intermediates/incremental-runtime-classes/debug/instant-run.jar"/>
+	<classpathentry kind="lib" path="app/build/intermediates/pre-dexed/debug/Camera-Test-mp4parser-unspecified_890765ecdf4b1c069bd3b8e7a04cc55dd4f59afd.jar"/>
+	<classpathentry kind="lib" path="app/build/intermediates/pre-dexed/debug/com.android.support-support-v4-23.0.0_2f2f164b18877def77a5122ca9961c3795b595b6.jar"/>
+	<classpathentry kind="lib" path="app/build/intermediates/pre-dexed/debug/debug_92c99d36b9e6a55469d3ce617813933c4f0dfcbe.jar"/>
+	<classpathentry kind="lib" path="app/build/intermediates/pre-dexed/debug/internal_impl-23.0.0_7a1e020786ecd1969bab078d9b154c754b647e69.jar"/>
+	<classpathentry kind="lib" path="app/build/intermediates/pre-dexed/debug/support-annotations-23.0.0_0d7b2881cc97519a13c9dae36d27ff7b7a18a506.jar"/>
+	<classpathentry kind="lib" path="app/build/intermediates/transforms/mergeJavaRes/debug/jars/2/1f/main.jar"/>
+	<classpathentry kind="lib" path="build/generated/mockable-android-16.jar"/>
+	<classpathentry kind="lib" path="build/generated/mockable-android-22.jar"/>
+	<classpathentry kind="lib" path="build/generated/mockable-android-23.jar"/>
+	<classpathentry kind="lib" path="gradle/wrapper/gradle-wrapper.jar"/>
+	<classpathentry kind="lib" path="mp4parser/build/intermediates/bundles/debug/classes.jar"/>
+	<classpathentry kind="lib" path="mp4parser/build/intermediates/bundles/release/classes.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="output" path="app/build/intermediates/classes/debug"/>
+</classpath>

@@ -1,23 +1,29 @@
 package com.urun.camera_test.Data;
 
+import android.Manifest;
 import android.app.Activity;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.hardware.Camera;
 import android.os.Bundle;
 import android.os.Environment;
+import android.support.v4.app.ActivityCompat;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+import android.support.v4.content.ContextCompat;
+import android.widget.Toast;
 
 import com.coremedia.iso.IsoFile;
 import com.googlecode.mp4parser.authoring.Movie;
 import com.googlecode.mp4parser.authoring.builder.DefaultMp4Builder;
 import com.googlecode.mp4parser.authoring.tracks.H264TrackImpl;
+import com.googlecode.mp4parser.h264.model.SeqParameterSet;
 import com.urun.camera_test.CameraAccess.CameraPreview;
 import com.urun.camera_test.R;
 
@@ -26,11 +32,11 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.*;
 
 
 public class MainActivity extends Activity{
 
+    private static final int PERMISSION_REQUEST_CODE = 100;
     private Camera camera_front, camera_back;
     SurfaceView surfaceView_back,surfaceView_front;
     SurfaceHolder surfaceHolder_back,surfaceHolder_front;
@@ -72,6 +78,7 @@ public class MainActivity extends Activity{
         cameraPreview_back = new CameraPreview(getApplicationContext(),camera_back,surfaceHolder_back,1);
         surfaceHolder_back.addCallback(cameraPreview_back);
         surfaceHolder_back.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+//        requestPermission();
 
 
 
@@ -110,11 +117,11 @@ public class MainActivity extends Activity{
                         m.addTrack(h264Track);
 
                         IsoFile out = new DefaultMp4Builder().build(m);
-                        FileOutputStream fos = new FileOutputStream(new File("h264_output.mp4"));
+                        FileOutputStream fos = new FileOutputStream(new File( Environment.getExternalStorageDirectory()+ "/h264_output.mp4"));
                         out.getBox(fos.getChannel());
                         fos.close();
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        Log.e("fail_to_end_encode",e.getMessage());
                     }
                 }
             }
@@ -276,6 +283,43 @@ public class MainActivity extends Activity{
 
     }
 
+
+    private boolean checkPermission(){
+        int permissionCheck = ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        if (permissionCheck == PackageManager.PERMISSION_GRANTED){
+
+            return true;
+
+        } else {
+
+            return false;
+
+        }
+    }
+
+    private void requestPermission(){
+
+        if (ActivityCompat.shouldShowRequestPermissionRationale(this,Manifest.permission.WRITE_EXTERNAL_STORAGE)){
+
+            Toast.makeText(getApplicationContext(),"Write External Storage Granted.",Toast.LENGTH_LONG).show();
+
+        } else {
+
+            ActivityCompat.requestPermissions(this,new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},PERMISSION_REQUEST_CODE);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        switch (requestCode) {
+            case PERMISSION_REQUEST_CODE:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    Toast.makeText(this, "Permission Granted.", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(this, "Permission Denied!", Toast.LENGTH_SHORT).show();
+                }
+                break;
+        }    }
 
     @Override
     protected void onPause() {

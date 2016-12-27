@@ -1,12 +1,12 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 22
+    compileSdkVersion 23
     buildToolsVersion '24.0.2'
     defaultConfig {
         applicationId "com.urun.camera_test"
         minSdkVersion 17
-        targetSdkVersion 22
+        targetSdkVersion 23
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
@@ -41,4 +41,5 @@ dependencies {
     })
     testCompile 'junit:junit:4.12'
     compile project(':mp4parser')
+    compile 'com.android.support:support-v4:23.0.0'
 }
