@@ -413,7 +413,7 @@ public class H264TrackImpl extends AbstractTrack {
                 }
             } else {
                 System.err.println("Warning: Can't determine frame rate. Guessing 25 fps");
-                timescale = 24000;
+                timescale = 20000;
                 frametick = 2000;
             }
         }

@@ -9,6 +9,10 @@ import android.graphics.Paint;
 import android.hardware.Camera;
 import android.os.Bundle;
 import android.os.Environment;
+import android.renderscript.Allocation;
+import android.renderscript.RenderScript;
+import android.renderscript.ScriptIntrinsicYuvToRGB;
+import android.renderscript.Type;
 import android.support.v4.app.ActivityCompat;
 import android.util.Log;
 import android.view.SurfaceHolder;
@@ -50,7 +54,10 @@ public class MainActivity extends Activity{
     Queue frontFrames = new Queue();
     final Object key = new Object();
     int combinedFrameNumber=0;
-
+    private RenderScript rs;
+    private ScriptIntrinsicYuvToRGB yuvToRgbIntrinsic;
+    private Type.Builder yuvType, rgbaType;
+    private Allocation in, out;
     public MainActivity() throws IOException {
     }
 
@@ -134,7 +141,7 @@ public class MainActivity extends Activity{
             Bitmap bitmapBack,bitmapFront;
             @Override
             public void onPreviewFrame(byte[] data, Camera camera) {
-                int[] argb8888 = new int[640 * 480];/*the reason for setting this arrays size to 320*240 is that we have to set the array according to preview width and height.*/
+                int[] argb8888 = new int[640* 480];/*the reason for setting this arrays size to 320*240 is that we have to set the array according to preview width and height.*/
                 decodeYUV(argb8888, data, 640, 480);
                 if (savingName == "back") {
                     backFrames.add(Bitmap.createBitmap(argb8888, 640, 480, Bitmap.Config.ARGB_8888));
