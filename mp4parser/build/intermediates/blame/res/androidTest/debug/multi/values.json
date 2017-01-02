@@ -20,25 +20,6 @@
                         "endOffset": 97
                     }
                 }
-            },
-            {
-                "to": {
-                    "startLine": 3,
-                    "startColumn": 4,
-                    "startOffset": 102,
-                    "endColumn": 57,
-                    "endOffset": 155
-                },
-                "from": {
-                    "file": "/home/urun/Desktop/Camera-Test/mp4parser/build/intermediates/bundles/debug/res/values/values.xml",
-                    "position": {
-                        "startLine": 3,
-                        "startColumn": 4,
-                        "startOffset": 102,
-                        "endColumn": 57,
-                        "endOffset": 155
-                    }
-                }
             }
         ]
     }

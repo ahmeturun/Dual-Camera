@@ -15,9 +15,6 @@ public final class R {
         public static int ic_launcher=0x7f020001;
     }
     public static final class string {
-        public static int app_name=0x7f040000;
-    }
-    public static final class style {
-        public static int AppTheme=0x7f030000;
+        public static int app_name=0x7f030000;
     }
 }
