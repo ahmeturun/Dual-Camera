@@ -2,11 +2,17 @@ package com.urun.camera_test.Data;
 
 import android.app.Activity;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.hardware.Camera;
 import android.os.Bundle;
 import android.os.Environment;
+import android.renderscript.Allocation;
+import android.renderscript.Element;
+import android.renderscript.RenderScript;
+import android.renderscript.ScriptIntrinsicYuvToRGB;
+import android.renderscript.Type;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -26,7 +32,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.*;
 
 
 public class MainActivity extends Activity{
@@ -44,6 +49,8 @@ public class MainActivity extends Activity{
     Queue frontFrames = new Queue();
     final Object key = new Object();
     int combinedFrameNumber=0;
+    RenderScript rs;
+    ScriptIntrinsicYuvToRGB yuvToRgbIntrinsic;
 
     public MainActivity() throws IOException {
     }
@@ -127,12 +134,13 @@ public class MainActivity extends Activity{
             Bitmap bitmapBack,bitmapFront;
             @Override
             public void onPreviewFrame(byte[] data, Camera camera) {
-                int[] argb8888 = new int[640 * 480];/*the reason for setting this arrays size to 320*240 is that we have to set the array according to preview width and height.*/
-                decodeYUV(argb8888, data, 640, 480);
+                byte[] argb8888 = new byte[640 * 480];/*the reason for setting this arrays size to 320*240 is that we have to set the array according to preview width and height.*/
+                convertYuvToRGB(640,480,data,argb8888);
+                BitmapFactory.Options options = new BitmapFactory.Options();
                 if (savingName == "back") {
-                    backFrames.add(Bitmap.createBitmap(argb8888, 640, 480, Bitmap.Config.ARGB_8888));
+                    backFrames.add(BitmapFactory.decodeByteArray(argb8888, 0, argb8888.length, options));
                 } else {
-                    frontFrames.add(Bitmap.createBitmap(argb8888, 640, 480, Bitmap.Config.ARGB_8888));
+                    frontFrames.add(BitmapFactory.decodeByteArray(argb8888, 0, argb8888.length, options));
                 }
                 Log.e("created picture: ", "" + pictureNumber);
                 pictureNumber++;
@@ -222,16 +230,6 @@ public class MainActivity extends Activity{
     public void decodeYUV(int[] out, byte[] fg, int width, int height)
             throws NullPointerException, IllegalArgumentException {
         int sz = width * height;
-        if (out == null)
-            throw new NullPointerException("buffer out is null");
-        if (out.length < sz)
-            throw new IllegalArgumentException("buffer out size " + out.length
-                    + " < minimum " + sz);
-        if (fg == null)
-            throw new NullPointerException("buffer 'fg' is null");
-        if (fg.length < sz)
-            throw new IllegalArgumentException("buffer fg size " + fg.length
-                    + " < minimum " + sz * 3 / 2);
         int i, j;
         int Y, Cr = 0, Cb = 0;
         for (j = 0; j < height; j++) {
@@ -276,6 +274,32 @@ public class MainActivity extends Activity{
 
     }
 
+    public void convertYuvToRGB(int W, int H,byte[]yuvByteArray,byte[]outBytes){
+        rs = RenderScript.create(this);
+        yuvToRgbIntrinsic = ScriptIntrinsicYuvToRGB.create(rs, Element.RGBA_8888(rs));
+
+
+
+        Type.Builder yuvType = new Type.Builder(rs, Element.U8(rs))
+                .setX(W).setY(H)
+                .setYuvFormat(android.graphics.ImageFormat.NV21);
+        Allocation in = Allocation.createTyped(rs, yuvType.create(), Allocation.USAGE_SCRIPT);
+
+
+        Type.Builder rgbaType = new Type.Builder(rs, Element.RGBA_8888(rs))
+                .setX(W).setY(H);
+        Allocation out = Allocation.createTyped(rs, rgbaType.create(), Allocation.USAGE_SCRIPT);
+
+        in.copyFrom(yuvByteArray);
+
+        yuvToRgbIntrinsic.setInput(in);
+        yuvToRgbIntrinsic.forEach(out);
+
+        out.copyTo(outBytes);
+
+        Bitmap bmpout = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888);
+        out.copyTo(bmpout);
+    }
 
     @Override
     protected void onPause() {

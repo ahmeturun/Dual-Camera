@@ -13,9 +13,7 @@
         android:label="Tests for com.googlecode.mp4parser.test"
         android:targetPackage="com.googlecode.mp4parser.test" />
 
-    <application
-        android:label="@string/app_name"
-        android:theme="@style/AppTheme" >
+    <application android:label="@string/app_name" >
         <uses-library android:name="android.test.runner" />
     </application>
 
