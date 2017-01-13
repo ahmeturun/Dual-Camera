@@ -67,6 +67,9 @@ public class MainActivity extends Activity{
         /*setting captureFlag to false at the beginning of the activity.(as not recording)*/
         captureFlag = true;
 
+        final RenderScript rs_back = RenderScript.create(this);
+        final RenderScript rs_front = RenderScript.create(this);
+
         /* Initializing camera preview from FRONT*/
         surfaceView_front = (SurfaceView) findViewById(R.id.camera_preview_front);
         surfaceHolder_front = surfaceView_front.getHolder();
@@ -95,9 +98,9 @@ public class MainActivity extends Activity{
 
                     try {
                         /*Taking frames from front camera while the preview is available*/
-                        getFrameFromPreview(cameraPreview_back, "front");
+                        getFrameFromPreview(cameraPreview_back, "front",rs_back);
                         /*Taking frames from front camera while the preview is available*/
-                        getFrameFromPreview(cameraPreview_front, "back");
+                        getFrameFromPreview(cameraPreview_front, "back",rs_front);
 
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -129,18 +132,17 @@ public class MainActivity extends Activity{
         });
     }
 
-    private void getFrameFromPreview(CameraPreview cameraPreview, final String savingName) throws IOException {
+    private void getFrameFromPreview(CameraPreview cameraPreview, final String savingName, final RenderScript rs) throws IOException {
         cameraPreview.camera.setPreviewCallback(new Camera.PreviewCallback() {
             Bitmap bitmapBack,bitmapFront;
             @Override
             public void onPreviewFrame(byte[] data, Camera camera) {
-                byte[] argb8888 = new byte[640 * 480];/*the reason for setting this arrays size to 320*240 is that we have to set the array according to preview width and height.*/
-                convertYuvToRGB(640,480,data,argb8888);
-                BitmapFactory.Options options = new BitmapFactory.Options();
+                byte[] argb8888 = new byte[640 * 480 * 4];/*the reason for setting this arrays size to 320*240 is that we have to set the array according to preview width and height.*/
+                Bitmap currBitmap = convertYuvToRGB(640,480,data,argb8888,rs);
                 if (savingName == "back") {
-                    backFrames.add(BitmapFactory.decodeByteArray(argb8888, 0, argb8888.length, options));
+                    backFrames.add(currBitmap);
                 } else {
-                    frontFrames.add(BitmapFactory.decodeByteArray(argb8888, 0, argb8888.length, options));
+                    frontFrames.add(currBitmap);
                 }
                 Log.e("created picture: ", "" + pictureNumber);
                 pictureNumber++;
@@ -206,16 +208,16 @@ public class MainActivity extends Activity{
 
                 // well known RGB to YUV algorithm
                 Y = ( (  66 * R + 129 * G +  25 * B + 128) >> 8) +  16;
-                V = ( ( -38 * R -  74 * G + 112 * B + 128) >> 8) + 128;
-                U = ( ( 112 * R -  94 * G -  18 * B + 128) >> 8) + 128;
+                U = ( ( -38 * R -  74 * G + 112 * B + 128) >> 8) + 128;
+                V  = ( ( 112 * R -  94 * G -  18 * B + 128) >> 8) + 128;
 
                 // YV12 has a plane of Y and two chroma plans (U, V) planes each sampled by a factor of 2
                 //    meaning for every 4 Y pixels there are 1 V and 1 U.  Note the sampling is every other
                 //    pixel AND every other scanline.
-                yuv420sp[yIndex++] = (byte) ((Y < 0) ? 0 : ((Y > 255) ? 255 : Y));
+                yuv420sp[yIndex++] = (byte) Y;
                 if (j % 2 == 0 && index % 2 == 0) {
-                    yuv420sp[uIndex++] = (byte)((V<0) ? 0 : ((V > 255) ? 255 : V));
-                    yuv420sp[vIndex++] = (byte)((U<0) ? 0 : ((U > 255) ? 255 : U));
+                    yuv420sp[uIndex++] = (byte)U;
+                    yuv420sp[vIndex++] = (byte)V;
                 }
 
                 index ++;
@@ -274,8 +276,8 @@ public class MainActivity extends Activity{
 
     }
 
-    public void convertYuvToRGB(int W, int H,byte[]yuvByteArray,byte[]outBytes){
-        rs = RenderScript.create(this);
+    public Bitmap convertYuvToRGB(int W, int H,byte[]yuvByteArray,byte[]outBytes, RenderScript rs){
+
         yuvToRgbIntrinsic = ScriptIntrinsicYuvToRGB.create(rs, Element.RGBA_8888(rs));
 
 
@@ -299,6 +301,7 @@ public class MainActivity extends Activity{
 
         Bitmap bmpout = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888);
         out.copyTo(bmpout);
+        return bmpout;
     }
 
     @Override

@@ -52,7 +52,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         // modify parameter
 //        param.setPreviewSize(surfaceHolder.getSurfaceFrame().width(), surfaceHolder.getSurfaceFrame().height());
         param.setPreviewSize(640, 480);
-//        param.setPreviewFormat(ImageFormat.NV21);
+        param.setPreviewFormat(ImageFormat.NV21);
 //        Toast.makeText(getContext(), "width:"+surfaceHolder.getSurfaceFrame().width()+"\nheight: "+surfaceHolder.getSurfaceFrame().height()+"", Toast.LENGTH_SHORT).show();
         camera.setParameters(param);
 //        camera.setDisplayOrientation(90);
