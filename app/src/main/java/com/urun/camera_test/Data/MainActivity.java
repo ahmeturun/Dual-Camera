@@ -19,6 +19,7 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.coremedia.iso.IsoFile;
 import com.googlecode.mp4parser.authoring.Movie;
@@ -134,31 +135,28 @@ public class MainActivity extends Activity{
 
     private void getFrameFromPreview(CameraPreview cameraPreview, final String savingName, final RenderScript rs) throws IOException {
         cameraPreview.camera.setPreviewCallback(new Camera.PreviewCallback() {
-            Bitmap bitmapBack,bitmapFront;
+            byte[] bitmapBack,bitmapFront;
             @Override
             public void onPreviewFrame(byte[] data, Camera camera) {
-                byte[] argb8888 = new byte[640 * 480 * 4];/*the reason for setting this arrays size to 320*240 is that we have to set the array according to preview width and height.*/
-                Bitmap currBitmap = convertYuvToRGB(640,480,data,argb8888,rs);
                 if (savingName == "back") {
-                    backFrames.add(currBitmap);
+                    backFrames.add(data);
                 } else {
-                    frontFrames.add(currBitmap);
+                    frontFrames.add(data);
                 }
                 Log.e("created picture: ", "" + pictureNumber);
                 pictureNumber++;
                 if (!frontFrames.isEmpty() && !backFrames.isEmpty() && !finishedEncodingFlag) {
                     synchronized (key) {
-                        bitmapBack = (Bitmap) frontFrames.poll();
-                        bitmapFront = (Bitmap) backFrames.poll();
+                        bitmapBack = (byte[]) frontFrames.poll();
+                        bitmapFront = (byte[]) backFrames.poll();
                         if (bitmapBack != null && bitmapFront != null) {
-                            Bitmap bitmapResult = Bitmap.createBitmap(640, 960, Bitmap.Config.ARGB_8888);
-                            Canvas canvas = new Canvas(bitmapResult);
-                            Paint paint = new Paint();
-                            canvas.drawBitmap(bitmapBack, 0, 0, paint);
-                            canvas.drawBitmap(bitmapFront, 0, bitmapBack.getHeight(), paint);
-                            byte[] byteArray = getYV12(bitmapResult.getWidth(), bitmapResult.getHeight(), bitmapResult);//the byte array version of merged pictures
+//                            Bitmap bitmapResult = Bitmap.createBitmap(640, 960, Bitmap.Config.ARGB_8888);
+//                            Canvas canvas = new Canvas(bitmapResult);
+//                            Paint paint = new Paint();
+//                            canvas.drawBitmap(bitmapBack, 0, 0, paint);
+//                            canvas.drawBitmap(bitmapFront, 0, bitmapBack.getHeight(), paint);
 
-                            mAvEncoder.offerEncoder(byteArray);
+                            mAvEncoder.offerEncoder(mergeYUV420PData(bitmapBack,bitmapFront));
                             combinedFrameNumber++;
                             Log.e("EncodeSuccesful_Frame: ", "" + combinedFrameNumber);
                         } else {
@@ -178,11 +176,11 @@ public class MainActivity extends Activity{
 
         int [] argb = new int[inputWidth * inputHeight];
 
+
         scaled.getPixels(argb, 0, inputWidth, 0, 0, inputWidth, inputHeight);
 
         byte [] yuv = new byte[inputWidth*inputHeight*3/2];
         encodeYV12(yuv, argb, inputWidth, inputHeight);
-
         scaled.recycle();
 
         return yuv;
@@ -225,58 +223,9 @@ public class MainActivity extends Activity{
         }
     }
 
-    /*Below function has taken from: http://stackoverflow.com/questions/9325861/converting-yuv-rgbimage-processing-yuv-during-onpreviewframe-in-android
-    * It's been used for converting the format of picture data type returned from onPreviewFrame.*/
-    // decode Y, U, and V values on the YUV 420 buffer described as YCbCr_422_SP by Android
-    // David Manpearl 081201
-    public void decodeYUV(int[] out, byte[] fg, int width, int height)
-            throws NullPointerException, IllegalArgumentException {
-        int sz = width * height;
-        int i, j;
-        int Y, Cr = 0, Cb = 0;
-        for (j = 0; j < height; j++) {
-            int pixPtr = j * width;
-            final int jDiv2 = j >> 1;
-            for (i = 0; i < width; i++) {
-                Y = fg[pixPtr];
-                if (Y < 0)
-                    Y += 255;
-                if ((i & 0x1) != 1) {
-                    final int cOff = sz + jDiv2 * width + (i >> 1) * 2;
-                    Cb = fg[cOff];
-                    if (Cb < 0)
-                        Cb += 127;
-                    else
-                        Cb -= 128;
-                    Cr = fg[cOff + 1];
-                    if (Cr < 0)
-                        Cr += 127;
-                    else
-                        Cr -= 128;
-                }
-                int R = Y + Cr + (Cr >> 2) + (Cr >> 3) + (Cr >> 5);
-                if (R < 0)
-                    R = 0;
-                else if (R > 255)
-                    R = 255;
-                int G = Y - (Cb >> 2) + (Cb >> 4) + (Cb >> 5) - (Cr >> 1)
-                        + (Cr >> 3) + (Cr >> 4) + (Cr >> 5);
-                if (G < 0)
-                    G = 0;
-                else if (G > 255)
-                    G = 255;
-                int B = Y + Cb + (Cb >> 1) + (Cb >> 2) + (Cb >> 6);
-                if (B < 0)
-                    B = 0;
-                else if (B > 255)
-                    B = 255;
-                out[pixPtr++] = 0xff000000 + (B << 16) + (G << 8) + R;
-            }
-        }
+    /*Below function has been used for converting the format of picture data type returned from onPreviewFrame.*/
 
-    }
-
-    public Bitmap convertYuvToRGB(int W, int H,byte[]yuvByteArray,byte[]outBytes, RenderScript rs){
+    public void convertYuvToRGB(int W, int H,byte[]yuvByteArray,byte[]outBytes, RenderScript rs){
 
         yuvToRgbIntrinsic = ScriptIntrinsicYuvToRGB.create(rs, Element.RGBA_8888(rs));
 
@@ -299,9 +248,33 @@ public class MainActivity extends Activity{
 
         out.copyTo(outBytes);
 
-        Bitmap bmpout = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888);
-        out.copyTo(bmpout);
-        return bmpout;
+//        Bitmap bmpout = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888);
+//        out.copyTo(bmpout);
+//        return bmpout;
+    }
+
+    public byte[] mergeYUV420PData(byte[] first, byte[] second){
+        //combined Y(luma) component => (Y1+Y2)
+        byte[] YCombined = new byte[614400];
+        System.arraycopy(first,0,YCombined,0,307200);
+        System.arraycopy(second,0,YCombined,307200,307200);
+        //combined U(Cb) component => (U1+U2)
+        byte[] UCombined = new byte[153600];
+        System.arraycopy(first,307200,UCombined,0,76800);
+        System.arraycopy(second,307200,UCombined,76800,76800);
+        //combined Y(Cr) component => (V1+V2)
+        byte[] VCombined = new byte[153600];
+        System.arraycopy(first,384000,VCombined,0,76800);
+        System.arraycopy(second,384000,VCombined,76800,76800);
+
+        //combining seperate combined components together=> (Y1+Y2)+(U1+U2)+(V1+V2)
+        byte[] YUVCombined = new byte[921600];
+        System.arraycopy(YCombined,0, YUVCombined,0,614400);
+        System.arraycopy(UCombined,0, YUVCombined,614400,153600);
+        System.arraycopy(VCombined,0, YUVCombined,768000,153600);
+
+        return YUVCombined;
+
     }
 
     @Override
