@@ -151,7 +151,7 @@ public class MainActivity extends Activity{
                         bitmapFront = (byte[]) backFrames.poll();
                         if (bitmapBack != null && bitmapFront != null) {
 
-                            mAvEncoder.offerEncoder(mergeYUV420PData(bitmapBack, bitmapFront));
+                            mAvEncoder.offerEncoder(mergeYUV420PData(bitmapBack, bitmapFront, 640, 480));
                         } else {
                             Log.e("pictures_check", "Pictures not ready.");
                         }
@@ -247,26 +247,25 @@ public class MainActivity extends Activity{
 //        return bmpout;
     }
 
-    public byte[] mergeYUV420PData(byte[] first, byte[] second){
+    public byte[] mergeYUV420PData(byte[] first, byte[] second,int width, int height){
         //combined Y(luma) component => (Y1+Y2)
-        byte[] YCombined = new byte[614400];
-        System.arraycopy(first,0,YCombined,0,307200);
-        System.arraycopy(second,0,YCombined,307200,307200);
+        byte[] YCombined = new byte[width * height * 2];//width * height * 2 is the total Y component count in the merged picture.
+        System.arraycopy(first,0,YCombined,0,width*height);
+        System.arraycopy(second,0,YCombined,width*height,width*height);
         //combined U(Cb) component => (U1+U2)
-        byte[] UCombined = new byte[153600];
-        System.arraycopy(first,307200,UCombined,0,76800);
-        System.arraycopy(second,307200,UCombined,76800,76800);
+        byte[] UCombined = new byte[(width/2) * (height/2) * 2];//(width/2) * (height/2) * 2 is the total U component count in the merged picture.
+        System.arraycopy(first,YCombined.length/2,UCombined,0,(width/2) * (height/2));
+        System.arraycopy(second,YCombined.length/2,UCombined,(width/2) * (height/2),(width/2) * (height/2));
         //combined Y(Cr) component => (V1+V2)
-        byte[] VCombined = new byte[153600];
-        System.arraycopy(first,384000,VCombined,0,76800);
-        System.arraycopy(second,384000,VCombined,76800,76800);
+        byte[] VCombined = new byte[(width/2) * (height/2) * 2];//(width/2) * (height/2) * 2 is the total V component count in the merged picture.
+        System.arraycopy(first,(YCombined.length/2+UCombined.length/2),VCombined,0,(width/2) * (height/2));
+        System.arraycopy(second,(YCombined.length/2+UCombined.length/2),VCombined,(width/2) * (height/2),(width/2) * (height/2));
 
         //combining seperate combined components together=> (Y1+Y2)+(U1+U2)+(V1+V2)
         byte[] YUVCombined = new byte[921600];
-        System.arraycopy(YCombined,0, YUVCombined,0,614400);
-        System.arraycopy(
-                ,0, YUVCombined,614400,153600);
-        System.arraycopy(VCombined,0, YUVCombined,768000,153600);
+        System.arraycopy(YCombined,0, YUVCombined,0,YCombined.length);
+        System.arraycopy(UCombined,0, YUVCombined,YCombined.length,UCombined.length);
+        System.arraycopy(VCombined,0, YUVCombined,YCombined.length+UCombined.length,VCombined.length);
 
         return YUVCombined;
 
