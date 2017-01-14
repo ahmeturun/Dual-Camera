@@ -50,7 +50,6 @@ public class MainActivity extends Activity{
     Queue frontFrames = new Queue();
     final Object key = new Object();
     int combinedFrameNumber=0;
-    RenderScript rs;
     ScriptIntrinsicYuvToRGB yuvToRgbIntrinsic;
 
     public MainActivity() throws IOException {
@@ -116,12 +115,12 @@ public class MainActivity extends Activity{
                     try {
                         finishedEncodingFlag = true;
                         mAvEncoder.close();
-                        H264TrackImpl h264Track = new H264TrackImpl( new BufferedInputStream( new FileInputStream( Environment.getExternalStorageDirectory()+ "/video_encoded.264") ));
+                        H264TrackImpl h264Track = new H264TrackImpl( new BufferedInputStream( new FileInputStream( new File(Environment.getExternalStorageDirectory()+ "/video_encoded.264")) ));
                         Movie m = new Movie();
                         m.addTrack(h264Track);
 
                         IsoFile out = new DefaultMp4Builder().build(m);
-                        FileOutputStream fos = new FileOutputStream(new File("h264_output.mp4"));
+                        FileOutputStream fos = new FileOutputStream(new File(Environment.getExternalStorageDirectory() + "/h264_output.mp4"));
                         out.getBox(fos.getChannel());
                         fos.close();
                     } catch (Exception e) {
@@ -145,23 +144,18 @@ public class MainActivity extends Activity{
                 }
                 Log.e("created picture: ", "" + pictureNumber);
                 pictureNumber++;
-                if (!frontFrames.isEmpty() && !backFrames.isEmpty() && !finishedEncodingFlag) {
-                    synchronized (key) {
+                synchronized (key) {
+                    if (!frontFrames.isEmpty() && !backFrames.isEmpty() && !finishedEncodingFlag) {
+
                         bitmapBack = (byte[]) frontFrames.poll();
                         bitmapFront = (byte[]) backFrames.poll();
                         if (bitmapBack != null && bitmapFront != null) {
-//                            Bitmap bitmapResult = Bitmap.createBitmap(640, 960, Bitmap.Config.ARGB_8888);
-//                            Canvas canvas = new Canvas(bitmapResult);
-//                            Paint paint = new Paint();
-//                            canvas.drawBitmap(bitmapBack, 0, 0, paint);
-//                            canvas.drawBitmap(bitmapFront, 0, bitmapBack.getHeight(), paint);
 
-                            mAvEncoder.offerEncoder(mergeYUV420PData(bitmapBack,bitmapFront));
-                            combinedFrameNumber++;
-                            Log.e("EncodeSuccesful_Frame: ", "" + combinedFrameNumber);
+                            mAvEncoder.offerEncoder(mergeYUV420PData(bitmapBack, bitmapFront));
                         } else {
                             Log.e("pictures_check", "Pictures not ready.");
                         }
+
                     }
                 }
 
@@ -270,7 +264,8 @@ public class MainActivity extends Activity{
         //combining seperate combined components together=> (Y1+Y2)+(U1+U2)+(V1+V2)
         byte[] YUVCombined = new byte[921600];
         System.arraycopy(YCombined,0, YUVCombined,0,614400);
-        System.arraycopy(UCombined,0, YUVCombined,614400,153600);
+        System.arraycopy(
+                ,0, YUVCombined,614400,153600);
         System.arraycopy(VCombined,0, YUVCombined,768000,153600);
 
         return YUVCombined;
